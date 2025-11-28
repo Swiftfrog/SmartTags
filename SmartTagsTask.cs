@@ -1,13 +1,13 @@
 using MediaBrowser.Model.Tasks;
 using MediaBrowser.Controller.Library;
-using MediaBrowser.Model.Serialization; // IJsonSerializer 命名空间
+using MediaBrowser.Model.Serialization;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Model.Logging;
+using MediaBrowser.Common.Net; // <--- 关键引用：Emby 的网络接口
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
-using System.Net.Http; // IHttpClientFactory
 
 namespace SmartTags;
 
@@ -16,7 +16,7 @@ public class SmartTagsTask : IScheduledTask
     private readonly ILogger _logger;
     private readonly ILibraryManager _libraryManager;
     private readonly IJsonSerializer _jsonSerializer;
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IHttpClient _httpClient; // <--- 修改这里
     private readonly IApplicationPaths _appPaths;
 
     // 构造函数注入所有我们未来需要的服务
@@ -24,13 +24,13 @@ public class SmartTagsTask : IScheduledTask
         ILogger logger, 
         ILibraryManager libraryManager, 
         IJsonSerializer jsonSerializer, 
-        IHttpClientFactory httpClientFactory,
+        IHttpClient httpClient, // <--- 修改这里
         IApplicationPaths appPaths)
     {
         _logger = logger;
         _libraryManager = libraryManager;
         _jsonSerializer = jsonSerializer;
-        _httpClientFactory = httpClientFactory;
+        _httpClient = httpClient; // <--- 修改这里
         _appPaths = appPaths;
     }
 
@@ -41,7 +41,7 @@ public class SmartTagsTask : IScheduledTask
 
     public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
     {
-        // 默认手动触发，或者你可以设置为每天一次
+        // 默认手动触发
         yield return new TaskTriggerInfo { Type = TaskTriggerInfo.TriggerDaily, TimeOfDayTicks = TimeSpan.FromHours(4).Ticks };
     }
 
@@ -59,7 +59,10 @@ public class SmartTagsTask : IScheduledTask
 
         _logger.Info($"[SmartTags] 配置检查通过。功能开关 - 原产地: {config.EnableCountryTags}, 年代: {config.EnableDecadeTags}, IMDbTop: {config.EnableImdbTopTags}");
 
-        // TODO: 这里未来会调用处理逻辑
+        // 这里未来会调用处理逻辑
+        // var dataManager = new TmdbDataManager(_appPaths, _jsonSerializer, _httpClient);
+        // ...
+        
         await Task.CompletedTask;
     }
 }
