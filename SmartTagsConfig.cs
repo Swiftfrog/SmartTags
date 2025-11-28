@@ -1,4 +1,3 @@
-// SmartTagsConfig.cs
 using MediaBrowser.Model.Plugins;
 using Emby.Web.GenericEdit;
 using System.ComponentModel;
@@ -8,7 +7,10 @@ namespace SmartTags;
 public class SmartTagsConfig : EditableOptionsBase
 {
     public override string EditorTitle => "SmartTags Settings";
+    
     // TMDB API Key (必须)
+    [DisplayName("TMDB API Key")]
+    [Description("申请地址：https://www.themoviedb.org/settings/api")]
     public string TmdbApiKey { get; set; } = "";
 
     // 功能开关
@@ -26,7 +28,6 @@ public class SmartTagsConfig : EditableOptionsBase
     public bool EnableDecadeTags { get; set; } = false;
     
     [DisplayName("年代标签格式")]
-    [Description("设置年代标签的格式")]
-    public string DecadeTagFormat { get; set; } = "{0}年代"; // 例如 "80年代"
-    
+    [Description("设置年代标签的格式，{0} 代表年代数字（如80, 90, 00）")]
+    public string DecadeTagFormat { get; set; } = "{0}年代"; 
 }
