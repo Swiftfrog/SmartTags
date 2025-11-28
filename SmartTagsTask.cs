@@ -49,7 +49,7 @@ public class SmartTagsTask : IScheduledTask
     {
         _logger.Info("[SmartTags] 计划任务已启动。正在检查配置...");
 
-        var config = Plugin.Instance.Configuration;
+        var config = Plugin.Instance?.Configuration;
 
         if (string.IsNullOrEmpty(config.TmdbApiKey))
         {
