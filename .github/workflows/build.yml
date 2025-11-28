@@ -1,0 +1,50 @@
+name: Build SmartTags Plugin
+
+on:
+  push:
+    branches: [ "main", "master", "d*" ] # 监听 main, master 以及 d 开头的开发分支
+    tags: [ "v*" ]                       # 监听 v 开头的 tag (如 v1.0.0)
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write        # 授予创建 Release 的权限
+      pull-requests: read    # 授予读取 PRs 以生成 Release Notes 的权限
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      # 确保是以 Release 模式编译
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SmartTags
+        # 注意：这里修改为了 SmartTags.dll
+        path: ./bin/Release/net8.0/SmartTags.dll
+        if-no-files-found: error
+        retention-days: 7
+        
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')    # 仅在推送 tag 时运行
+      uses: softprops/action-gh-release@v2
+      with:
+        # 告诉 Release 上传编译好的 SmartTags.dll
+        files: ./bin/Release/net8.0/SmartTags.dll
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
