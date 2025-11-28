@@ -16,6 +16,8 @@ public class Plugin : BasePluginSimpleUI<SmartTagsConfig>
     public override Guid Id => new Guid("AA721234-B111-4222-A333-123456789000");
 
     public static Plugin Instance { get; private set; }
+    
+    public SmartTagsConfig Configuration => GetOptions();
 
     public Plugin(IApplicationHost applicationHost) : base(applicationHost)
     {
