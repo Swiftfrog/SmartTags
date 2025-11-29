@@ -175,11 +175,11 @@ public class SmartTagsCleanupTask : IScheduledTask
                     item.Tags = currentTags.ToArray();
                     item.UpdateToRepository(ItemUpdateType.MetadataEdit);
                     cleanedCount++;
-                    _logger.Info($"[SmartTags] Cleanup 回滚项目: \"{item.Name}\" | 移除标签: [{string.Join(", ", tagsToRemove)}]");
+                    _logger.Info($"[SmartTags] Cleanup 项目: \"{item.Name}\" | 移除标签: [{string.Join(", ", tagsToRemove)}]");
                 }
             }
         }
 
-        _logger.Info($"[SmartTags] Cleanup 回滚完成。处理 {total} 个项目，实际回滚 {cleanedCount} 个。");
+        _logger.Info($"[SmartTags] Cleanup 完成。处理 {total} 个项目，实际回滚 {cleanedCount} 个。");
     }
 }
