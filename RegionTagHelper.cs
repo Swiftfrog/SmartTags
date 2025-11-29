@@ -1,68 +1,62 @@
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace SmartTags;
 
 public static class RegionTagHelper
 {
-    // 语言代码 (ISO 639-1) -> 主要使用该语言的国家/地区代码 (ISO 3166-1)
+    // 语言代码 -> 主要使用该语言的国家 (用于兜底)
     private static readonly Dictionary<string, HashSet<string>> LanguageToCountryMap = new()
     {
         // === 中文系 ===
         { "zh", new HashSet<string> { "CN", "HK", "TW", "SG", "MO" } },
-        { "cn", new HashSet<string> { "CN", "HK", "TW", "SG", "MO" } }, // TMDB 偶尔返回
-        { "bo", new HashSet<string> { "CN" } }, // 藏语
-
-        // === 英语系 (覆盖主要英语产地) ===
+        { "cn", new HashSet<string> { "CN", "HK", "TW", "SG", "MO" } },
+        { "bo", new HashSet<string> { "CN" } },
+        // === 英语系 ===
         { "en", new HashSet<string> { "US", "GB", "CA", "AU", "NZ", "IE", "ZA", "PH", "SG" } },
-
         // === 日韩 ===
         { "ja", new HashSet<string> { "JP" } },
         { "ko", new HashSet<string> { "KR", "KP" } },
-
-        // === 欧洲主要语种 ===
-        { "fr", new HashSet<string> { "FR", "BE", "CA", "CH", "MA" } }, // 法语：法国, 比利时, 魁北克, 瑞士, 摩洛哥
-        { "de", new HashSet<string> { "DE", "AT", "CH", "DD" } },       // 德语：含东德(DD)
-        { "it", new HashSet<string> { "IT", "CH" } },                   // 意大利语
-        { "es", new HashSet<string> { "ES", "MX", "AR", "CL", "CO", "PE", "CU", "VE" } }, // 西班牙语：含拉美
-        { "pt", new HashSet<string> { "PT", "BR" } },                   // 葡萄牙语：葡萄牙, 巴西
-        { "ru", new HashSet<string> { "RU", "SU", "UA", "KZ", "BY" } }, // 俄语：含苏联(SU)
-        { "nl", new HashSet<string> { "NL", "BE" } },                   // 荷兰语
-
+        // === 欧洲 ===
+        { "fr", new HashSet<string> { "FR", "BE", "CA", "CH", "MA" } },
+        { "de", new HashSet<string> { "DE", "AT", "CH", "DD" } },
+        { "it", new HashSet<string> { "IT", "CH" } },
+        { "es", new HashSet<string> { "ES", "MX", "AR", "CL", "CO", "PE", "CU", "VE" } },
+        { "pt", new HashSet<string> { "PT", "BR" } },
+        { "ru", new HashSet<string> { "RU", "SU", "UA", "KZ", "BY" } },
+        { "nl", new HashSet<string> { "NL", "BE" } },
         // === 北欧 ===
-        { "sv", new HashSet<string> { "SE" } }, // 瑞典语
-        { "no", new HashSet<string> { "NO" } }, // 挪威语
-        { "da", new HashSet<string> { "DK" } }, // 丹麦语
-        { "fi", new HashSet<string> { "FI" } }, // 芬兰语
-        { "is", new HashSet<string> { "IS" } }, // 冰岛语
-
+        { "sv", new HashSet<string> { "SE" } },
+        { "no", new HashSet<string> { "NO" } },
+        { "da", new HashSet<string> { "DK" } },
+        { "fi", new HashSet<string> { "FI" } },
+        { "is", new HashSet<string> { "IS" } },
         // === 东欧/中欧 ===
-        { "pl", new HashSet<string> { "PL" } },             // 波兰语
-        { "cs", new HashSet<string> { "CZ", "CS", "XC" } }, // 捷克语：含捷克斯洛伐克
-        { "hu", new HashSet<string> { "HU" } },             // 匈牙利语
-        { "ro", new HashSet<string> { "RO" } },             // 罗马尼亚语
-        { "bg", new HashSet<string> { "BG" } },             // 保加利亚语
-        { "sr", new HashSet<string> { "RS", "YU", "HR", "BA" } }, // 塞尔维亚/克罗地亚语：含南斯拉夫(YU)
+        { "pl", new HashSet<string> { "PL" } },
+        { "cs", new HashSet<string> { "CZ", "CS", "XC" } },
+        { "hu", new HashSet<string> { "HU" } },
+        { "ro", new HashSet<string> { "RO" } },
+        { "bg", new HashSet<string> { "BG" } },
+        { "sr", new HashSet<string> { "RS", "YU", "HR", "BA" } },
         { "hr", new HashSet<string> { "HR", "YU" } },
-        { "uk", new HashSet<string> { "UA", "SU" } },       // 乌克兰语
-
+        { "uk", new HashSet<string> { "UA", "SU" } },
         // === 亚洲其他 ===
-        { "hi", new HashSet<string> { "IN" } }, // 印地语
-        { "ta", new HashSet<string> { "IN" } }, // 泰米尔语
-        { "th", new HashSet<string> { "TH" } }, // 泰语
-        { "vi", new HashSet<string> { "VN" } }, // 越南语
-        { "id", new HashSet<string> { "ID" } }, // 印尼语
-        { "ms", new HashSet<string> { "MY", "SG" } }, // 马来语
-        { "tl", new HashSet<string> { "PH" } }, // 他加禄语 (菲律宾)
-        { "fa", new HashSet<string> { "IR" } }, // 波斯语
-        { "he", new HashSet<string> { "IL" } }, // 希伯来语
-        { "tr", new HashSet<string> { "TR" } }, // 土耳其语
-
-        // === 阿拉伯语系 ===
+        { "hi", new HashSet<string> { "IN" } },
+        { "ta", new HashSet<string> { "IN" } },
+        { "th", new HashSet<string> { "TH" } },
+        { "vi", new HashSet<string> { "VN" } },
+        { "id", new HashSet<string> { "ID" } },
+        { "ms", new HashSet<string> { "MY", "SG" } },
+        { "tl", new HashSet<string> { "PH" } },
+        { "fa", new HashSet<string> { "IR" } },
+        { "he", new HashSet<string> { "IL" } },
+        { "tr", new HashSet<string> { "TR" } },
+        // === 阿拉伯 ===
         { "ar", new HashSet<string> { "EG", "SA", "AE", "QA", "MA", "IQ", "LB" } }
     };
 
-    // 简单的代码 -> 中文名映射 (你可以根据需要扩展，或者直接把 PinyinSeek 的 CountryMapper 拿过来用)
+    // 国家代码 -> 中文名映射
     private static readonly Dictionary<string, string> CountryCodeToName = new()
     {
         // === 英语国家 ===
@@ -106,36 +100,6 @@ public static class RegionTagHelper
         { "KE", "肯尼亚" }
     };
 
-    // public static string? GetRegionTag(TmdbCacheData data)
-    // {
-    //     if (data == null) return null;
-// 
-    //     string lang = data.OriginalLanguage?.ToLower() ?? "";
-    //     
-    //     // 1. 优先使用 OriginCountry (最精准)
-    //     if (data.OriginCountries != null && data.OriginCountries.Count > 0)
-    //     {
-    //         return MapCodeToName(data.OriginCountries[0]);
-    //     }
-// 
-    //     // 2. 尝试从 ProductionCountries 中筛选符合语言的国家
-    //     if (data.ProductionCountries != null && data.ProductionCountries.Count > 0 && !string.IsNullOrEmpty(lang))
-    //     {
-    //         if (LanguageToCountryMap.TryGetValue(lang, out var validCountries))
-    //         {
-    //             // 找到第一个既在制作列表中，又是该语言主要使用国的国家
-    //             var match = data.ProductionCountries.FirstOrDefault(c => validCountries.Contains(c));
-    //             if (!string.IsNullOrEmpty(match))
-    //             {
-    //                 return MapCodeToName(match);
-    //             }
-    //         }
-    //     }
-// 
-    //     // 3. 兜底逻辑
-    //     return GetDefaultCountryByLanguage(lang);
-    // }
-
     public static string? GetRegionTag(TmdbCacheData data, SmartTagsConfig config)
     {
         if (data == null) return null;
@@ -143,36 +107,59 @@ public static class RegionTagHelper
         string lang = data.OriginalLanguage?.ToLower() ?? "";
         string code = null;
 
-        // === 逻辑升级 Start ===
-        
-        // 1. 优先分析 OriginCountries
+        // === 逻辑层级 1: 优先分析 OriginCountries ===
         if (data.OriginCountries != null && data.OriginCountries.Count > 0)
         {
-            // 情况 A: 只有一个原产地，直接用
+            // Case A: 单一产地 (Fast Path - 90%的情况)
+            // 只要只有一个，直接信任，无需仲裁
             if (data.OriginCountries.Count == 1)
             {
                 code = data.OriginCountries[0];
             }
-            // 情况 B: 有多个原产地 (合拍片)，需要仲裁
+            // Case B: 多个产地 (需要仲裁)
             else
             {
-                // 尝试用 ProductionCountries 的第一个作为主导国进行匹配
-                var primaryProducer = data.ProductionCountries?.FirstOrDefault();
-                
-                if (!string.IsNullOrEmpty(primaryProducer) && data.OriginCountries.Contains(primaryProducer))
+                bool isChineseLang = lang == "zh" || lang == "cn" || lang == "bo";
+
+                // B1: 华语片 - 语言锚定策略
+                if (isChineseLang)
                 {
-                    // 命中！Production 里的老大在 Origin 名单里，听它的
-                    // 案例：Origin=[ES, AR], Prod=[AR, ES] -> 选中 AR
-                    code = primaryProducer;
+                    // 粤语 (cn) -> 锚定 HK
+                    if (lang == "cn")
+                    {
+                        code = data.OriginCountries.FirstOrDefault(c => c.Equals("HK", StringComparison.OrdinalIgnoreCase));
+                    }
+                    // 国语 (zh) -> 锚定 TW 或 CN (修正《双瞳》问题)
+                    else if (lang == "zh")
+                    {
+                        code = data.OriginCountries.FirstOrDefault(c => 
+                            c.Equals("TW", StringComparison.OrdinalIgnoreCase) || 
+                            c.Equals("CN", StringComparison.OrdinalIgnoreCase));
+                    }
                 }
-                else
+                
+                // B2: 非华语片 (或 B1 锚定失败) - 资金方仲裁策略
+                // 解决《谜一样的双眼》西班牙/阿根廷排序问题
+                if (string.IsNullOrEmpty(code))
                 {
-                    // 没命中，或者没有 Production 信息，只能回退到 Origin 的第一个
+                    var primaryProducer = data.ProductionCountries?.FirstOrDefault();
+                    
+                    if (!string.IsNullOrEmpty(primaryProducer) && data.OriginCountries.Contains(primaryProducer))
+                    {
+                        code = primaryProducer;
+                    }
+                }
+
+                // B3: 所有仲裁都失败，回退到 Origin 的第一个
+                if (string.IsNullOrEmpty(code))
+                {
                     code = data.OriginCountries[0];
                 }
             }
         }
-        // 2. 如果 Origin 为空，尝试 ProductionCountries + Language 兜底
+        
+        // === 逻辑层级 2: 数据缺失兜底 ===
+        // 如果 Origin 为空，尝试用 ProductionCountries + Language 推断
         else if (data.ProductionCountries != null && data.ProductionCountries.Count > 0 && !string.IsNullOrEmpty(lang))
         {
             if (LanguageToCountryMap.TryGetValue(lang, out var validCountries))
@@ -180,37 +167,27 @@ public static class RegionTagHelper
                 code = data.ProductionCountries.FirstOrDefault(c => validCountries.Contains(c));
             }
         }
-        // === 逻辑升级 End ===
 
-        // 如果找到了具体的国家代码
+        // === 格式化输出 ===
         if (!string.IsNullOrEmpty(code))
         {
             return FormatCountryTag(code, config.CountryStyle);
         }
 
-        // 3. 最终兜底 (仅语言)
+        // === 逻辑层级 3: 最终兜底 (仅语言) ===
         return GetDefaultCountryByLanguage(lang);
     }
 
-    // === 新增：格式化辅助方法 ===
     private static string FormatCountryTag(string code, CountryTagStyle style)
     {
-        // 先获取中文名，如果映射表里没有，就用代码本身
         string name = CountryCodeToName.TryGetValue(code, out var n) ? n : code;
-
         return style switch
         {
-            CountryTagStyle.NameOnly => name, // "香港"
-            CountryTagStyle.CodeOnly => code, // "HK"
-            CountryTagStyle.NameAndCode => $"{name} ({code})", // "香港 (HK)"
+            CountryTagStyle.NameOnly => name,
+            CountryTagStyle.CodeOnly => code,
+            CountryTagStyle.NameAndCode => $"{name} ({code})",
             _ => name
         };
-    }
-
-    private static string MapCodeToName(string code)
-    {
-        // 如果在字典里，返回中文名；否则直接返回代码(或者英文名)
-        return CountryCodeToName.TryGetValue(code, out var name) ? name : code;
     }
 
     private static string? GetDefaultCountryByLanguage(string lang)
@@ -219,12 +196,18 @@ public static class RegionTagHelper
         {
             "ja" => "日本",
             "ko" => "韩国",
-            "zh" or "cn" => "华语", // 无法区分具体地区时
+            "zh" or "cn" => "华语",
             "en" => "英语",
             "fr" => "法国",
             "de" => "德国",
             "ru" => "俄罗斯",
+            "es" => "西班牙",
+            "pt" => "葡萄牙",
+            "it" => "意大利",
             "th" => "泰国",
+            "vi" => "越南",
+            "hi" => "印度",
+            "pl" => "波兰",
             _ => null
         };
     }
