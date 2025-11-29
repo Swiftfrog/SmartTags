@@ -184,11 +184,11 @@ public static class RegionTagHelper
         };
     }
 
-    // private static string MapCodeToName(string code)
-    // {
-    //     // 如果在字典里，返回中文名；否则直接返回代码(或者英文名)
-    //     return CountryCodeToName.TryGetValue(code, out var name) ? name : code;
-    // }
+    private static string MapCodeToName(string code)
+    {
+        // 如果在字典里，返回中文名；否则直接返回代码(或者英文名)
+        return CountryCodeToName.TryGetValue(code, out var name) ? name : code;
+    }
 
     private static string? GetDefaultCountryByLanguage(string lang)
     {
