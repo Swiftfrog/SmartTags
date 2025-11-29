@@ -51,7 +51,7 @@ public class SmartTagsTask : IScheduledTask
 
         var config = Plugin.Instance?.Configuration;
 
-        if (string.IsNullOrEmpty(config.TmdbApiKey))
+        if (string.IsNullOrEmpty(config?.TmdbApiKey))
         {
             _logger.Warn("[SmartTags] 未配置 TMDB API Key，任务跳过。请在插件设置中填写 Key。");
             return;
