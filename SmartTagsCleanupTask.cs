@@ -98,7 +98,7 @@ public class SmartTagsCleanupTask : IScheduledTask
             if (cache != null)
             {
                 // 获取该项目的 TMDB ID
-                var tmdbId = item.GetProviderId(MetadataProvider.Tmdb);
+                var tmdbId = item.GetProviderId(MetadataProviders.Tmdb);
                 if (!string.IsNullOrEmpty(tmdbId) && cache.TryGetValue(tmdbId, out var cacheData))
                 {
                     // 核心逻辑：根据缓存数据，重新计算出“如果我们运行插件，会打什么标签”
