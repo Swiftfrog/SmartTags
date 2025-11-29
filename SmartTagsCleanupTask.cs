@@ -126,7 +126,10 @@ public class SmartTagsCleanupTask : IScheduledTask
             //     }
             // }
 
-            if (!string.IsNullOrEmpty(tmdbId) && cache.TryGetValue(tmdbId, out var cacheData))
+            // === A. 精准清理原产地标签 (基于缓存) ===
+            var tmdbId = item.GetProviderId(MetadataProviders.Tmdb); // 获取 ID 的代码必须存在
+
+            if (!string.IsNullOrEmpty(tmdbId) && cache != null && cache.TryGetValue(tmdbId, out var cacheData))
             {
                 // 传入 config (或全开的 tempConfig，如果是 Cleanup 这里的 config 就是 Plugin.Config)
                 // 注意：如果用户改了格式（比如从“香港”改为“香港 (HK)”），
