@@ -106,37 +106,36 @@ public static class RegionTagHelper
         { "KE", "肯尼亚" }
     };
 
-    public static string? GetRegionTag(TmdbCacheData data)
-    {
-        if (data == null) return null;
+    // public static string? GetRegionTag(TmdbCacheData data)
+    // {
+    //     if (data == null) return null;
+// 
+    //     string lang = data.OriginalLanguage?.ToLower() ?? "";
+    //     
+    //     // 1. 优先使用 OriginCountry (最精准)
+    //     if (data.OriginCountries != null && data.OriginCountries.Count > 0)
+    //     {
+    //         return MapCodeToName(data.OriginCountries[0]);
+    //     }
+// 
+    //     // 2. 尝试从 ProductionCountries 中筛选符合语言的国家
+    //     if (data.ProductionCountries != null && data.ProductionCountries.Count > 0 && !string.IsNullOrEmpty(lang))
+    //     {
+    //         if (LanguageToCountryMap.TryGetValue(lang, out var validCountries))
+    //         {
+    //             // 找到第一个既在制作列表中，又是该语言主要使用国的国家
+    //             var match = data.ProductionCountries.FirstOrDefault(c => validCountries.Contains(c));
+    //             if (!string.IsNullOrEmpty(match))
+    //             {
+    //                 return MapCodeToName(match);
+    //             }
+    //         }
+    //     }
+// 
+    //     // 3. 兜底逻辑
+    //     return GetDefaultCountryByLanguage(lang);
+    // }
 
-        string lang = data.OriginalLanguage?.ToLower() ?? "";
-        
-        // 1. 优先使用 OriginCountry (最精准)
-        if (data.OriginCountries != null && data.OriginCountries.Count > 0)
-        {
-            return MapCodeToName(data.OriginCountries[0]);
-        }
-
-        // 2. 尝试从 ProductionCountries 中筛选符合语言的国家
-        if (data.ProductionCountries != null && data.ProductionCountries.Count > 0 && !string.IsNullOrEmpty(lang))
-        {
-            if (LanguageToCountryMap.TryGetValue(lang, out var validCountries))
-            {
-                // 找到第一个既在制作列表中，又是该语言主要使用国的国家
-                var match = data.ProductionCountries.FirstOrDefault(c => validCountries.Contains(c));
-                if (!string.IsNullOrEmpty(match))
-                {
-                    return MapCodeToName(match);
-                }
-            }
-        }
-
-        // 3. 兜底逻辑
-        return GetDefaultCountryByLanguage(lang);
-    }
-
-    // 修改方法签名，增加 config 参数
     public static string? GetRegionTag(TmdbCacheData data, SmartTagsConfig config)
     {
         if (data == null) return null;
@@ -144,12 +143,36 @@ public static class RegionTagHelper
         string lang = data.OriginalLanguage?.ToLower() ?? "";
         string code = null;
 
-        // 1. 优先使用 OriginCountry
+        // === 逻辑升级 Start ===
+        
+        // 1. 优先分析 OriginCountries
         if (data.OriginCountries != null && data.OriginCountries.Count > 0)
         {
-            code = data.OriginCountries[0];
+            // 情况 A: 只有一个原产地，直接用
+            if (data.OriginCountries.Count == 1)
+            {
+                code = data.OriginCountries[0];
+            }
+            // 情况 B: 有多个原产地 (合拍片)，需要仲裁
+            else
+            {
+                // 尝试用 ProductionCountries 的第一个作为主导国进行匹配
+                var primaryProducer = data.ProductionCountries?.FirstOrDefault();
+                
+                if (!string.IsNullOrEmpty(primaryProducer) && data.OriginCountries.Contains(primaryProducer))
+                {
+                    // 命中！Production 里的老大在 Origin 名单里，听它的
+                    // 案例：Origin=[ES, AR], Prod=[AR, ES] -> 选中 AR
+                    code = primaryProducer;
+                }
+                else
+                {
+                    // 没命中，或者没有 Production 信息，只能回退到 Origin 的第一个
+                    code = data.OriginCountries[0];
+                }
+            }
         }
-        // 2. 尝试 ProductionCountries + Language
+        // 2. 如果 Origin 为空，尝试 ProductionCountries + Language 兜底
         else if (data.ProductionCountries != null && data.ProductionCountries.Count > 0 && !string.IsNullOrEmpty(lang))
         {
             if (LanguageToCountryMap.TryGetValue(lang, out var validCountries))
@@ -157,6 +180,7 @@ public static class RegionTagHelper
                 code = data.ProductionCountries.FirstOrDefault(c => validCountries.Contains(c));
             }
         }
+        // === 逻辑升级 End ===
 
         // 如果找到了具体的国家代码
         if (!string.IsNullOrEmpty(code))
@@ -164,8 +188,7 @@ public static class RegionTagHelper
             return FormatCountryTag(code, config.CountryStyle);
         }
 
-        // 3. 兜底逻辑 (仅语言)
-        // 注意：兜底逻辑通常没有代码 (比如 "华语")，所以保持原样
+        // 3. 最终兜底 (仅语言)
         return GetDefaultCountryByLanguage(lang);
     }
 
