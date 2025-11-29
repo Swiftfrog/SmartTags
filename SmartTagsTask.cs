@@ -165,7 +165,8 @@ public class SmartTagsTask : IScheduledTask
 
                     if (data != null)
                     {
-                        var regionTag = RegionTagHelper.GetRegionTag(data);
+                        // var regionTag = RegionTagHelper.GetRegionTag(data);
+                        var regionTag = RegionTagHelper.GetRegionTag(data, config);
                         _logger.Debug($"[SmartTags] 获取成功。语言: {data.OriginalLanguage}, 产地: {string.Join(",", data.OriginCountries)} => 判定标签: {regionTag}");
 
                         if (!string.IsNullOrEmpty(regionTag))
@@ -287,11 +288,24 @@ public class SmartTagsTask : IScheduledTask
     }
 
     // --- 辅助方法: 标签操作 ---
+    // private string? TryGetDecadeTag(BaseItem item, string format)
+    // {
+    //     if (!item.ProductionYear.HasValue || item.ProductionYear.Value < 1900) return null;
+    //     int decade = (item.ProductionYear.Value / 10) * 10;
+    //     return string.Format(format, decade);
+    // }
+
     private string? TryGetDecadeTag(BaseItem item, string format)
     {
         if (!item.ProductionYear.HasValue || item.ProductionYear.Value < 1900) return null;
-        int decade = (item.ProductionYear.Value / 10) * 10;
-        return string.Format(format, decade);
+        
+        int year = item.ProductionYear.Value;
+        int decade4 = (year / 10) * 10; // 1990
+        int decade2 = decade4 % 100;    // 90
+
+        // 核心修改：传入两个参数
+        // {0} = 1990, {1} = 90
+        return string.Format(format, decade4, decade2);
     }
 
     private bool AddTag(BaseItem item, string tag)

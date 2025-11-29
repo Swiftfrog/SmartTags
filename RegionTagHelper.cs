@@ -136,11 +136,59 @@ public static class RegionTagHelper
         return GetDefaultCountryByLanguage(lang);
     }
 
-    private static string MapCodeToName(string code)
+    // 修改方法签名，增加 config 参数
+    public static string? GetRegionTag(TmdbCacheData data, SmartTagsConfig config)
     {
-        // 如果在字典里，返回中文名；否则直接返回代码(或者英文名)
-        return CountryCodeToName.TryGetValue(code, out var name) ? name : code;
+        if (data == null) return null;
+
+        string lang = data.OriginalLanguage?.ToLower() ?? "";
+        string code = null;
+
+        // 1. 优先使用 OriginCountry
+        if (data.OriginCountries != null && data.OriginCountries.Count > 0)
+        {
+            code = data.OriginCountries[0];
+        }
+        // 2. 尝试 ProductionCountries + Language
+        else if (data.ProductionCountries != null && data.ProductionCountries.Count > 0 && !string.IsNullOrEmpty(lang))
+        {
+            if (LanguageToCountryMap.TryGetValue(lang, out var validCountries))
+            {
+                code = data.ProductionCountries.FirstOrDefault(c => validCountries.Contains(c));
+            }
+        }
+
+        // 如果找到了具体的国家代码
+        if (!string.IsNullOrEmpty(code))
+        {
+            return FormatCountryTag(code, config.CountryStyle);
+        }
+
+        // 3. 兜底逻辑 (仅语言)
+        // 注意：兜底逻辑通常没有代码 (比如 "华语")，所以保持原样
+        return GetDefaultCountryByLanguage(lang);
     }
+
+    // === 新增：格式化辅助方法 ===
+    private static string FormatCountryTag(string code, CountryTagStyle style)
+    {
+        // 先获取中文名，如果映射表里没有，就用代码本身
+        string name = CountryCodeToName.TryGetValue(code, out var n) ? n : code;
+
+        return style switch
+        {
+            CountryTagStyle.NameOnly => name, // "香港"
+            CountryTagStyle.CodeOnly => code, // "HK"
+            CountryTagStyle.NameAndCode => $"{name} ({code})", // "香港 (HK)"
+            _ => name
+        };
+    }
+
+    // private static string MapCodeToName(string code)
+    // {
+    //     // 如果在字典里，返回中文名；否则直接返回代码(或者英文名)
+    //     return CountryCodeToName.TryGetValue(code, out var name) ? name : code;
+    // }
 
     private static string? GetDefaultCountryByLanguage(string lang)
     {

@@ -18,6 +18,11 @@ public class SmartTagsConfig : EditableOptionsBase
     [Description("是否启用添加原产国标签")]
     public bool EnableCountryTags { get; set; } = false;
     
+    // === 新增：国家标签风格设置 ===
+    [DisplayName("原产国标签格式")]
+    [Description("选择生成的标签样式")]
+    public CountryTagStyle CountryStyle { get; set; } = CountryTagStyle.NameOnly;
+    
     [DisplayName("启用IMDB TOP 250 标签")]
     [Description("是否启用添加IMDB TOP 250标签")]
     public bool EnableImdbTopTags { get; set; } = false;
@@ -47,4 +52,15 @@ public class SmartTagsConfig : EditableOptionsBase
     [DisplayName("启用清理任务")]
     [Description("慎重！执行 '清除SmartTags生成的标签' 任务。此开关在 Emby 重启后会自动关闭。")]
     public bool EnableCleanup { get; set; } = false;
+}
+
+// 定义显示风格枚举
+public enum CountryTagStyle
+{
+    [Description("仅名称 (例如: 香港)")]
+    NameOnly,
+    [Description("仅代码 (例如: HK)")]
+    CodeOnly,
+    [Description("名称和代码 (例如: 香港 (HK))")]
+    NameAndCode
 }
