@@ -3,9 +3,8 @@ using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Controller.Entities;
-using MediaBrowser.Model.Serialization; // 新增引用
-using MediaBrowser.Common.Configuration; // 新增引用
-using MediaBrowser.Controller.Entities.Movies; // 引用 Movie
+using MediaBrowser.Model.Serialization;
+using MediaBrowser.Common.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -19,8 +18,8 @@ public class SmartTagsCleanupTask : IScheduledTask
 {
     private readonly ILogger _logger;
     private readonly ILibraryManager _libraryManager;
-    private readonly IJsonSerializer _jsonSerializer; // 新增
-    private readonly IApplicationPaths _appPaths;     // 新增
+    private readonly IJsonSerializer _jsonSerializer;
+    private readonly IApplicationPaths _appPaths;
 
     public SmartTagsCleanupTask(
         ILogger logger, 
@@ -34,9 +33,9 @@ public class SmartTagsCleanupTask : IScheduledTask
         _appPaths = appPaths;
     }
 
-    public string Name => "SmartTags Cleanup (Rollback)";
+    public string Name => "SmartTags Cleanup";
     public string Key => "SmartTagsCleanupTask";
-    public string Description => "读取本地缓存，精准移除由 SmartTags 生成的标签。";
+    public string Description => "精准移除由 SmartTags 生成的标签（含原产地、年代、IMDb、媒体信息）。";
     public string Category => "SmartTags";
 
     public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
@@ -47,20 +46,18 @@ public class SmartTagsCleanupTask : IScheduledTask
 
     public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
     {
-        _logger.Info("[SmartTags] Cleanup 开始执行回滚任务...");
+        _logger.Info("[SmartTags] Cleanup 收到任务启动请求...");
         var config = Plugin.Instance?.Configuration;
-        
-        // === 安全检查 ===
-        // 注意：使用了 MetadataProviders.Tmdb (虽然这里主要用 config 检查)
+
+        // 安全检查
         if (config == null || !config.EnableCleanup)
         {
-            _logger.Warn("[SmartTags] Cleanup 任务被拒绝执行！");
-            _logger.Warn("[SmartTags] Cleanup 【危险】清理开关未开启。请先在插件设置中勾选 '启用清理任务' 并保存，然后再次运行此任务。");
+            _logger.Warn("[SmartTags] Cleanup 任务被拒绝！原因：清理开关未开启。");
             return;
         }
 
-        _logger.Info("[SmartTags] Cleanup 安全检查通过，开始执行回滚逻辑...");
-        
+        _logger.Info("[SmartTags] Cleanup 开始执行回滚任务...");
+
         // 1. 读取 TMDB 缓存文件 (用于精准回滚原产地标签)
         var cachePath = Path.Combine(_appPaths.PluginConfigurationsPath, "SmartTags_TmdbCache.json");
         Dictionary<string, TmdbCacheData>? cache = null;
@@ -79,10 +76,20 @@ public class SmartTagsCleanupTask : IScheduledTask
         }
         else
         {
-            _logger.Warn("[SmartTags] Cleanup 未找到缓存文件 (SmartTags_TmdbCache.json)。将跳过原产地标签清理，仅清理年代和IMDb标签。");
+            _logger.Warn("[SmartTags] Cleanup 未找到缓存文件。将跳过原产地标签清理。");
         }
 
-        // 2. 扫描所有项目
+        // 2. 准备一个“全开启”的临时配置，用于计算媒体信息标签
+        // 即使当前用户关闭了媒体标签功能，我们也要能清理掉以前生成的标签
+        var fullMediaConfig = new SmartTagsConfig
+        {
+            EnableResolutionTags = true,
+            EnableHdrTags = true,
+            EnableAudioTags = true
+            // 其他字段默认即可，不影响 MediaInfoHelper 计算
+        };
+
+        // 3. 扫描
         var query = new InternalItemsQuery
         {
             IncludeItemTypes = new[] { "Movie", "Series" },
@@ -103,19 +110,15 @@ public class SmartTagsCleanupTask : IScheduledTask
             if (item.Tags == null || item.Tags.Length == 0) continue;
 
             var currentTags = item.Tags.ToList();
-            var tagsToRemove = new List<string>(); // 收集本项目需要删除的标签
+            var tagsToRemove = new List<string>(); 
             
             // === A. 精准清理原产地标签 (基于缓存) ===
             if (cache != null)
             {
-                // 获取该项目的 TMDB ID
-                var tmdbId = item.GetProviderId(MetadataProviders.Tmdb);
+                var tmdbId = item.GetProviderId(MetadataProviders.Tmdb); // 使用复数枚举
                 if (!string.IsNullOrEmpty(tmdbId) && cache.TryGetValue(tmdbId, out var cacheData))
                 {
-                    // 核心逻辑：根据缓存数据，重新计算出“如果我们运行插件，会打什么标签”
-                    // 然后只删除这一个特定的标签
                     var expectedTag = RegionTagHelper.GetRegionTag(cacheData);
-                    
                     if (!string.IsNullOrEmpty(expectedTag) && currentTags.Contains(expectedTag, StringComparer.OrdinalIgnoreCase))
                     {
                         tagsToRemove.Add(expectedTag);
@@ -123,8 +126,18 @@ public class SmartTagsCleanupTask : IScheduledTask
                 }
             }
 
-            // === B. 清理年代标签 (基于算法) ===
-            // 只要项目有年份，我们就能算出插件会生成什么年代标签，如果存在就删掉
+            // === B. 精准清理媒体信息标签 (基于本地重新计算) ===
+            // 调用 Helper 算出这部影片“理论上”会拥有的媒体标签
+            var expectedMediaTags = MediaInfoHelper.GetMediaInfoTags(item, fullMediaConfig);
+            foreach (var tag in expectedMediaTags)
+            {
+                if (currentTags.Contains(tag, StringComparer.OrdinalIgnoreCase))
+                {
+                    tagsToRemove.Add(tag);
+                }
+            }
+
+            // === C. 清理年代标签 (基于算法) ===
             if (item.ProductionYear.HasValue && item.ProductionYear.Value >= 1900)
             {
                 string format = config?.DecadeTagFormat ?? "{0}年代";
@@ -137,7 +150,7 @@ public class SmartTagsCleanupTask : IScheduledTask
                 }
             }
 
-            // === C. 清理 IMDb Top 250 (固定字符串) ===
+            // === D. 清理 IMDb Top 250 ===
             string imdbTag = "IMDb Top 250";
             if (currentTags.Contains(imdbTag, StringComparer.OrdinalIgnoreCase))
             {
@@ -147,10 +160,10 @@ public class SmartTagsCleanupTask : IScheduledTask
             // === 执行删除 ===
             if (tagsToRemove.Count > 0)
             {
-                // 从当前标签列表中移除收集到的标签
                 bool listChanged = false;
                 foreach (var tag in tagsToRemove)
                 {
+                    // 使用 Remove 确保只删除匹配项
                     if (currentTags.Remove(tag))
                     {
                         listChanged = true;
