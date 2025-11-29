@@ -112,34 +112,48 @@ public class SmartTagsCleanupTask : IScheduledTask
             var currentTags = item.Tags.ToList();
             var tagsToRemove = new List<string>(); 
             
-            // === A. 精准清理原产地标签 (基于缓存) ===
-            // if (cache != null)
+            // // === A. 精准清理原产地标签 (基于缓存) ===
+            // var tmdbId = item.GetProviderId(MetadataProviders.Tmdb); // 获取 ID 的代码必须存在
+// 
+            // if (!string.IsNullOrEmpty(tmdbId) && cache != null && cache.TryGetValue(tmdbId, out var cacheData))
             // {
-            //     var tmdbId = item.GetProviderId(MetadataProviders.Tmdb); // 使用复数枚举
-            //     if (!string.IsNullOrEmpty(tmdbId) && cache.TryGetValue(tmdbId, out var cacheData))
+            //     // 传入 config (或全开的 tempConfig，如果是 Cleanup 这里的 config 就是 Plugin.Config)
+            //     // 注意：如果用户改了格式（比如从“香港”改为“香港 (HK)”），
+            //     // 这里只能算出“香港 (HK)”，所以旧的“香港”不会被删除。
+            //     // 建议用户：先运行 Cleanup 清理旧格式，再改设置，再运行 Update。
+            //     var expectedTag = RegionTagHelper.GetRegionTag(cacheData, config); 
+            //     
+            //     if (!string.IsNullOrEmpty(expectedTag) && currentTags.Contains(expectedTag, StringComparer.OrdinalIgnoreCase))
             //     {
-            //         var expectedTag = RegionTagHelper.GetRegionTag(cacheData);
-            //         if (!string.IsNullOrEmpty(expectedTag) && currentTags.Contains(expectedTag, StringComparer.OrdinalIgnoreCase))
-            //         {
-            //             tagsToRemove.Add(expectedTag);
-            //         }
+            //         tagsToRemove.Add(expectedTag);
             //     }
             // }
 
-            // === A. 精准清理原产地标签 (基于缓存) ===
-            var tmdbId = item.GetProviderId(MetadataProviders.Tmdb); // 获取 ID 的代码必须存在
+            // === A. 精准清理原产地标签 (遍历所有风格) ===
+            var tmdbId = item.GetProviderId(MetadataProviders.Tmdb);
 
             if (!string.IsNullOrEmpty(tmdbId) && cache != null && cache.TryGetValue(tmdbId, out var cacheData))
             {
-                // 传入 config (或全开的 tempConfig，如果是 Cleanup 这里的 config 就是 Plugin.Config)
-                // 注意：如果用户改了格式（比如从“香港”改为“香港 (HK)”），
-                // 这里只能算出“香港 (HK)”，所以旧的“香港”不会被删除。
-                // 建议用户：先运行 Cleanup 清理旧格式，再改设置，再运行 Update。
-                var expectedTag = RegionTagHelper.GetRegionTag(cacheData, config); 
-                
-                if (!string.IsNullOrEmpty(expectedTag) && currentTags.Contains(expectedTag, StringComparer.OrdinalIgnoreCase))
+                // 核心修改：不再只读取 config.CountryStyle，而是遍历枚举中所有可能的风格
+                // 这样无论用户以前是用 "香港"、"HK" 还是 "香港 (HK)" 生成的，都能被清理掉
+                foreach (CountryTagStyle style in Enum.GetValues(typeof(CountryTagStyle)))
                 {
-                    tagsToRemove.Add(expectedTag);
+                    // 创建一个临时的 Config 对象，仅用于欺骗 Helper 计算不同风格的标签
+                    var tempStyleConfig = new SmartTagsConfig 
+                    { 
+                        CountryStyle = style 
+                    };
+
+                    var expectedTag = RegionTagHelper.GetRegionTag(cacheData, tempStyleConfig);
+                
+                    if (!string.IsNullOrEmpty(expectedTag) && currentTags.Contains(expectedTag, StringComparer.OrdinalIgnoreCase))
+                    {
+                        // 使用 HashSet 或检查 Contains 防止重复添加（虽然 List.Remove 也不怕重复）
+                        if (!tagsToRemove.Contains(expectedTag))
+                        {
+                            tagsToRemove.Add(expectedTag);
+                        }
+                    }
                 }
             }
 
