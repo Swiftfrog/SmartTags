@@ -30,7 +30,7 @@ public class Plugin : BasePluginSimpleUI<SmartTagsConfig>
         if (config.EnableCleanup)
         {
             config.EnableCleanup = false;
-            SaveConfiguration(); // 强制保存回磁盘，确保 UI 上显示为关闭
+            SaveOptions(config);
         }
     }
 }
