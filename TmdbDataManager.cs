@@ -30,6 +30,10 @@ public class TmdbDataManager
     private readonly IHttpClient _httpClient;
     private ConcurrentDictionary<string, TmdbCacheData> _cache;
     private readonly object _fileLock = new object();
+    // 1. 新增：记录最后一次请求时间
+    private DateTime _lastRequestTime = DateTime.MinValue;
+    // 设定最小间隔：300ms (保守值，确保不超过 40req/10s)
+    private readonly TimeSpan _minRequestInterval = TimeSpan.FromMilliseconds(300);
 
     public TmdbDataManager(IApplicationPaths appPaths, IJsonSerializer jsonSerializer, IHttpClient httpClient)
     {
@@ -59,6 +63,18 @@ public class TmdbDataManager
     // === 这里使用了你推荐的高效写法 ===
     private async Task<TmdbCacheData?> FetchFromTmdb(string tmdbId, string type, string apiKey, CancellationToken cancellationToken)
     {
+        // === 节流核心逻辑 Start ===
+        var timeSinceLast = DateTime.UtcNow - _lastRequestTime;
+        if (timeSinceLast < _minRequestInterval)
+        {
+            // 如果距离上次请求不足 300ms，则等待剩下的时间
+            var delay = _minRequestInterval - timeSinceLast;
+            await Task.Delay(delay, cancellationToken);
+        }
+        // 更新最后请求时间（注意：要在 await 之后，请求发起之前更新）
+        _lastRequestTime = DateTime.UtcNow;
+        // === 节流核心逻辑 End ===
+        
         var url = $"https://api.themoviedb.org/3/{type}/{tmdbId}?api_key={apiKey}";
         
         var options = new HttpRequestOptions
