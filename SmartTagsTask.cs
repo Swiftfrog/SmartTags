@@ -5,7 +5,7 @@ using MediaBrowser.Common.Configuration;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Entities;     // 引用 BaseItem
-using MediaBrowser.Model.Entities;          // 引用 MetadataProvider
+using MediaBrowser.Model.Entities;          // 引用 MetadataProviders
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -91,7 +91,7 @@ public class SmartTagsTask : IScheduledTask
             if (config.EnableCountryTags || config.EnableImdbTopTags)
             {
                 // 获取 TMDB ID
-                var tmdbId = item.GetProviderId(MetadataProvider.Tmdb);
+                var tmdbId = item.GetProviderId(MetadataProviders.Tmdb);
                 
                 if (!string.IsNullOrEmpty(tmdbId))
                 {
