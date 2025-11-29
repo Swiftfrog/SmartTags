@@ -110,14 +110,19 @@ public class SmartTagsTask : IScheduledTask
             // === B. IMDb Top 250 (仅限电影) ===
             if (config.EnableImdbTopTags && item is Movie movie)
             {
-                var imdbId = movie.GetProviderId(MetadataProviders.Imdb);
+                var imdbId = movie.GetProviderId(MetadataProviders.Imdb); // 你的修正
                 if (!string.IsNullOrEmpty(imdbId) && imdbTopIds.Contains(imdbId))
                 {
                     string topTag = "IMDb Top 250";
+                    
                     if (AddTag(item, topTag))
                     {
                         isModified = true;
                         addedLogTags.Add(topTag);
+                    }
+                    else
+                    {
+                        _logger.Debug($"[SmartTags] IMDb标签已存在，跳过: \"{item.Name}\"");
                     }
                 }
             }
@@ -131,25 +136,35 @@ public class SmartTagsTask : IScheduledTask
                     string type = item is Movie ? "movie" : "tv";
                     
                     // Log Debug: 流程追踪
-                    _logger.Debug($"[SmartTags-Flow] 处理: {item.Name} | ID: {tmdbId} | 正在获取元数据...");
+                    // _logger.Debug($"[SmartTags] 处理: {item.Name} | ID: {tmdbId} | 正在获取元数据...");
 
                     var data = await dataManager.GetMetadataAsync(tmdbId, type, config.TmdbApiKey, cancellationToken);
 
                     if (data != null)
                     {
                         var regionTag = RegionTagHelper.GetRegionTag(data);
-                        _logger.Debug($"[SmartTags-Flow] 获取成功。语言: {data.OriginalLanguage}, 产地: {string.Join(",", data.OriginCountries)} => 判定标签: {regionTag}");
+                        _logger.Debug($"[SmartTags] 获取成功。语言: {data.OriginalLanguage}, 产地: {string.Join(",", data.OriginCountries)} => 判定标签: {regionTag}");
 
-                        if (!string.IsNullOrEmpty(regionTag) && AddTag(item, regionTag))
+                        if (!string.IsNullOrEmpty(regionTag))
                         {
-                            isModified = true;
-                            addedLogTags.Add(regionTag);
+                            // 修改点：拆分逻辑以支持 else 日志
+                            if (AddTag(item, regionTag))
+                            {
+                                isModified = true;
+                                addedLogTags.Add(regionTag);
+                            }
+                            else
+                            {
+                                // 这里满足你的诉求：明确告知已存在
+                                _logger.Debug($"[SmartTags] 标签已存在，跳过: \"{item.Name}\" -> [{regionTag}]");
+                            }
                         }
                     }
                     else
                     {
-                        _logger.Debug($"[SmartTags-Flow] 元数据获取失败 (Null): {item.Name}");
+                        _logger.Debug($"[SmartTags] 元数据获取失败 (Null): {item.Name}");
                     }
+                    
                 }
             }
 
