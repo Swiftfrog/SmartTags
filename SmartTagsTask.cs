@@ -110,7 +110,7 @@ public class SmartTagsTask : IScheduledTask
             // === B. IMDb Top 250 (仅限电影) ===
             if (config.EnableImdbTopTags && item is Movie movie)
             {
-                var imdbId = movie.GetProviderId(MetadataProvider.Imdb);
+                var imdbId = movie.GetProviderId(MetadataProviders.Imdb);
                 if (!string.IsNullOrEmpty(imdbId) && imdbTopIds.Contains(imdbId))
                 {
                     string topTag = "IMDb Top 250";
@@ -125,7 +125,7 @@ public class SmartTagsTask : IScheduledTask
             // === C. TMDB 原产国标签 ===
             if (config.EnableCountryTags)
             {
-                var tmdbId = item.GetProviderId(MetadataProvider.Tmdb);
+                var tmdbId = item.GetProviderId(MetadataProviders.Tmdb);
                 if (!string.IsNullOrEmpty(tmdbId))
                 {
                     string type = item is Movie ? "movie" : "tv";
