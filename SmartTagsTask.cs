@@ -48,7 +48,7 @@ public class SmartTagsTask : IScheduledTask
 
     public async Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
     {
-        var config = Plugin.Instance.Configuration;
+        var config = Plugin.Instance?.Configuration;
         if (string.IsNullOrEmpty(config?.TmdbApiKey))
         {
             _logger.Warn("[SmartTags] 未配置 TMDB API Key，跳过任务。");
