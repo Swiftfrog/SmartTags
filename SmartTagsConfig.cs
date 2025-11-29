@@ -31,6 +31,19 @@ public class SmartTagsConfig : EditableOptionsBase
     [Description("设置年代标签的格式，{0} 代表年代数字（如80, 90, 00）")]
     public string DecadeTagFormat { get; set; } = "{0}年代";
     
+    // === V1.1 新增：媒体信息标签 ===
+    [DisplayName("启用分辨率标签")]
+    [Description("自动添加 4K, 1080p, 720p 等标签")]
+    public bool EnableResolutionTags { get; set; } = false;
+
+    [DisplayName("启用 HDR/画质标签")]
+    [Description("自动添加 HDR, Dolby Vision 标签")]
+    public bool EnableHdrTags { get; set; } = false;
+
+    [DisplayName("启用音频格式标签")]
+    [Description("自动添加 Atmos, DTS:X, TrueHD, DTS-HD 等次世代音轨标签")]
+    public bool EnableAudioTags { get; set; } = false;
+    
     [DisplayName("启用清理任务")]
     [Description("慎重！执行 '清除SmartTags生成的标签' 任务。此开关在 Emby 重启后会自动关闭。")]
     public bool EnableCleanup { get; set; } = false;

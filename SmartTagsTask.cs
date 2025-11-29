@@ -107,6 +107,29 @@ public class SmartTagsTask : IScheduledTask
                 }
             }
 
+            // === V1.1 新增: 媒体信息标签 (本地逻辑，速度快) ===
+            // 只要开启了任意一个媒体标签开关
+            if (config.EnableResolutionTags || config.EnableHdrTags || config.EnableAudioTags)
+            {
+                // 调用 Helper 获取建议的标签列表
+                var mediaTags = MediaInfoHelper.GetMediaInfoTags(item, config);
+                
+                foreach (var tag in mediaTags)
+                {
+                    // 使用之前拆分的 AddTag 逻辑 (带 Debug 日志)
+                    if (AddTag(item, tag))
+                    {
+                        isModified = true;
+                        addedLogTags.Add(tag);
+                    }
+                    else
+                    {
+                        // 可选：如果觉得日志太吵，可以注释掉这行 Media Info 的跳过日志
+                        _logger.Debug($"[SmartTags] 媒体标签已存在: \"{item.Name}\" -> [{tag}]");
+                    }
+                }
+            }
+
             // === B. IMDb Top 250 (仅限电影) ===
             if (config.EnableImdbTopTags && item is Movie movie)
             {
