@@ -99,7 +99,8 @@ public class SmartTagsTask : IScheduledTask
             // === A. 年代标签 ===
             if (config.EnableDecadeTags)
             {
-                var tag = TryGetDecadeTag(item, config.DecadeTagFormat);
+                // var tag = TryGetDecadeTag(item, config.DecadeTagFormat);
+                var tag = TryGetDecadeTag(item, config.DecadeStyle);
                 if (tag != null && AddTag(item, tag))
                 {
                     isModified = true;
