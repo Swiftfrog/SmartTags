@@ -113,16 +113,30 @@ public class SmartTagsCleanupTask : IScheduledTask
             var tagsToRemove = new List<string>(); 
             
             // === A. 精准清理原产地标签 (基于缓存) ===
-            if (cache != null)
+            // if (cache != null)
+            // {
+            //     var tmdbId = item.GetProviderId(MetadataProviders.Tmdb); // 使用复数枚举
+            //     if (!string.IsNullOrEmpty(tmdbId) && cache.TryGetValue(tmdbId, out var cacheData))
+            //     {
+            //         var expectedTag = RegionTagHelper.GetRegionTag(cacheData);
+            //         if (!string.IsNullOrEmpty(expectedTag) && currentTags.Contains(expectedTag, StringComparer.OrdinalIgnoreCase))
+            //         {
+            //             tagsToRemove.Add(expectedTag);
+            //         }
+            //     }
+            // }
+
+            if (!string.IsNullOrEmpty(tmdbId) && cache.TryGetValue(tmdbId, out var cacheData))
             {
-                var tmdbId = item.GetProviderId(MetadataProviders.Tmdb); // 使用复数枚举
-                if (!string.IsNullOrEmpty(tmdbId) && cache.TryGetValue(tmdbId, out var cacheData))
+                // 传入 config (或全开的 tempConfig，如果是 Cleanup 这里的 config 就是 Plugin.Config)
+                // 注意：如果用户改了格式（比如从“香港”改为“香港 (HK)”），
+                // 这里只能算出“香港 (HK)”，所以旧的“香港”不会被删除。
+                // 建议用户：先运行 Cleanup 清理旧格式，再改设置，再运行 Update。
+                var expectedTag = RegionTagHelper.GetRegionTag(cacheData, config); 
+                
+                if (!string.IsNullOrEmpty(expectedTag) && currentTags.Contains(expectedTag, StringComparer.OrdinalIgnoreCase))
                 {
-                    var expectedTag = RegionTagHelper.GetRegionTag(cacheData);
-                    if (!string.IsNullOrEmpty(expectedTag) && currentTags.Contains(expectedTag, StringComparer.OrdinalIgnoreCase))
-                    {
-                        tagsToRemove.Add(expectedTag);
-                    }
+                    tagsToRemove.Add(expectedTag);
                 }
             }
 
@@ -138,15 +152,41 @@ public class SmartTagsCleanupTask : IScheduledTask
             }
 
             // === C. 清理年代标签 (基于算法) ===
-            if (item.ProductionYear.HasValue && item.ProductionYear.Value >= 1900)
+            // if (item.ProductionYear.HasValue && item.ProductionYear.Value >= 1900)
+            // {
+            //     string format = config?.DecadeTagFormat ?? "{0}年代";
+            //     int decade = (item.ProductionYear.Value / 10) * 10;
+            //     string expectedDecadeTag = string.Format(format, decade);
+// 
+            //     if (currentTags.Contains(expectedDecadeTag, StringComparer.OrdinalIgnoreCase))
+            //     {
+            //         tagsToRemove.Add(expectedDecadeTag);
+            //     }
+            // }
+            
+            // === B. 清理年代标签 (基于算法) ===
+            if (item.ProductionYear.HasValue && item.ProductionYear.Value >= 1850)
             {
-                string format = config?.DecadeTagFormat ?? "{0}年代";
-                int decade = (item.ProductionYear.Value / 10) * 10;
-                string expectedDecadeTag = string.Format(format, decade);
+                int year = item.ProductionYear.Value;
+                int decade4 = (year / 10) * 10;
+                int decade2 = decade4 % 100;
 
-                if (currentTags.Contains(expectedDecadeTag, StringComparer.OrdinalIgnoreCase))
+                // 我们把所有可能生成的格式都算一遍，只要有就删
+                // 这样无论用户切换过什么设置，清理任务都能把它们干掉
+                var possibleTags = new List<string>
                 {
-                    tagsToRemove.Add(expectedDecadeTag);
+                    $"{decade4}年代",      // 1990年代
+                    $"{decade2:00}年代",   // 90年代 / 00年代 (修复了0年代)
+                    $"{decade2}年代",      // 兼容旧版 BUG 产生的 "0年代"
+                    $"{decade4}s"          // 1990s
+                };
+
+                foreach (var tag in possibleTags)
+                {
+                    if (currentTags.Contains(tag, StringComparer.OrdinalIgnoreCase))
+                    {
+                        tagsToRemove.Add(tag);
+                    }
                 }
             }
 

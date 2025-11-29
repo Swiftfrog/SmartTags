@@ -32,9 +32,10 @@ public class SmartTagsConfig : EditableOptionsBase
     [Description("是否启用添加年代标签")]
     public bool EnableDecadeTags { get; set; } = false;
     
-    [DisplayName("年代标签格式")]
-    [Description("设置年代标签的格式，{0} 代表年代数字（如80, 90, 00）")]
-    public string DecadeTagFormat { get; set; } = "{0}年代";
+    // === 修改：改为枚举选择 ===
+    [DisplayName("年代标签风格")]
+    [Description("选择年代标签的显示格式。注意：2位数字风格无法区分 1950 和 2050。")]
+    public DecadeStyle DecadeStyle { get; set; } = DecadeStyle.FourDigits;
     
     // === V1.1 新增：媒体信息标签 ===
     [DisplayName("启用分辨率标签")]
@@ -63,4 +64,15 @@ public enum CountryTagStyle
     CodeOnly,
     [Description("名称和代码 (例如: 香港 (HK))")]
     NameAndCode
+}
+
+// 定义年代显示风格
+public enum DecadeStyle
+{
+    [Description("4位数字 (推荐, 如: 1990年代)")]
+    FourDigits, // 1990年代 - 无歧义
+    [Description("2位数字 (如: 90年代)")]
+    TwoDigits,  // 90年代 - 2000年会显示为 "00年代"
+    [Description("英文风格 (如: 1990s)")]
+    English     // 1990s
 }

@@ -295,17 +295,36 @@ public class SmartTagsTask : IScheduledTask
     //     return string.Format(format, decade);
     // }
 
-    private string? TryGetDecadeTag(BaseItem item, string format)
+    // private string? TryGetDecadeTag(BaseItem item, string format)
+    // {
+    //     if (!item.ProductionYear.HasValue || item.ProductionYear.Value < 1900) return null;
+    //     
+    //     int year = item.ProductionYear.Value;
+    //     int decade4 = (year / 10) * 10; // 1990
+    //     int decade2 = decade4 % 100;    // 90
+// 
+    //     // 核心修改：传入两个参数
+    //     // {0} = 1990, {1} = 90
+    //     return string.Format(format, decade4, decade2);
+    // }
+    
+    private string? TryGetDecadeTag(BaseItem item, DecadeStyle style)
     {
-        if (!item.ProductionYear.HasValue || item.ProductionYear.Value < 1900) return null;
+        if (!item.ProductionYear.HasValue || item.ProductionYear.Value < 1850) return null; // 过滤掉太早的年份
         
         int year = item.ProductionYear.Value;
-        int decade4 = (year / 10) * 10; // 1990
-        int decade2 = decade4 % 100;    // 90
+        int decade4 = (year / 10) * 10; // e.g. 2008 -> 2000
 
-        // 核心修改：传入两个参数
-        // {0} = 1990, {1} = 90
-        return string.Format(format, decade4, decade2);
+        return style switch
+        {
+            DecadeStyle.FourDigits => $"{decade4}年代",  // "2000年代"
+            
+            // 修复点：使用 {0:00} 强制补零
+            DecadeStyle.TwoDigits => $"{(decade4 % 100):00}年代", // 2000-> "00年代", 1990-> "90年代"
+            
+            DecadeStyle.English => $"{decade4}s",       // "2000s"
+            _ => $"{decade4}年代"
+        };
     }
 
     private bool AddTag(BaseItem item, string tag)
