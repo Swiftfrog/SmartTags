@@ -29,5 +29,9 @@ public class SmartTagsConfig : EditableOptionsBase
     
     [DisplayName("年代标签格式")]
     [Description("设置年代标签的格式，{0} 代表年代数字（如80, 90, 00）")]
-    public string DecadeTagFormat { get; set; } = "{0}年代"; 
+    public string DecadeTagFormat { get; set; } = "{0}年代";
+    
+    [DisplayName("启用清理任务")]
+    [Description("慎重！执行 '清除SmartTags生成的标签' 任务。此开关在 Emby 重启后会自动关闭。")]
+    public bool EnableCleanup { get; set; } = false;
 }

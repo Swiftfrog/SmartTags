@@ -22,5 +22,14 @@ public class Plugin : BasePluginSimpleUI<SmartTagsConfig>
     public Plugin(IApplicationHost applicationHost) : base(applicationHost)
     {
         Instance = this;
+        
+        // === 核心逻辑：重启后自动关闭清理开关 ===
+        // 注意：此时配置可能已经从 XML 加载了，我们需要检查并覆盖它
+        var config = Configuration;
+        if (config.EnableCleanup)
+        {
+            config.EnableCleanup = false;
+            SaveConfiguration(); // 强制保存回磁盘，确保 UI 上显示为关闭
+        }
     }
 }

@@ -50,6 +50,17 @@ public class SmartTagsCleanupTask : IScheduledTask
         _logger.Info("[SmartTags] Cleanup 开始执行回滚任务...");
         var config = Plugin.Instance?.Configuration;
         
+        // === 安全检查 ===
+        // 注意：使用了 MetadataProviders.Tmdb (虽然这里主要用 config 检查)
+        if (config == null || !config.EnableCleanup)
+        {
+            _logger.Warn("[SmartTags] Cleanup 任务被拒绝执行！");
+            _logger.Warn("[SmartTags] Cleanup 【危险】清理开关未开启。请先在插件设置中勾选 '启用清理任务' 并保存，然后再次运行此任务。");
+            return;
+        }
+
+        _logger.Info("[SmartTags] Cleanup 安全检查通过，开始执行回滚逻辑...");
+        
         // 1. 读取 TMDB 缓存文件 (用于精准回滚原产地标签)
         var cachePath = Path.Combine(_appPaths.PluginConfigurationsPath, "SmartTags_TmdbCache.json");
         Dictionary<string, TmdbCacheData>? cache = null;
