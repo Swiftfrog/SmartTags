@@ -17,6 +17,9 @@ public class TmdbItemDetails
 
     [DataMember(Name = "origin_country")]
     public List<string>? OriginCountry { get; set; }
+    
+    [DataMember(Name = "production_countries")]
+    public List<TmdbProductionCountry>? ProductionCountries { get; set; }
 
     // V1.2 新增：制作公司
     [DataMember(Name = "production_companies")]
