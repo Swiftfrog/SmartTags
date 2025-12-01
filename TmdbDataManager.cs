@@ -1,4 +1,3 @@
-// TmdbDataManager.cs
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Common.Configuration;
@@ -8,18 +7,21 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System;
-using System.Linq; // 用于 Select
+using System.Linq;
 
 namespace SmartTags;
 
-// 这是存入本地磁盘的精简缓存结构（保持不变）
 public class TmdbCacheData
 {
     public string TmdbId { get; set; } = string.Empty;
     public string? ImdbId { get; set; }
     public string? OriginalLanguage { get; set; }
     public List<string> OriginCountries { get; set; } = new();
-    public List<string> ProductionCountries { get; set; } = new();
+    
+    // V1.2 变更：分开存储 ID，避免冲突
+    public List<int> ProductionCompanyIds { get; set; } = new(); 
+    public List<int> NetworkIds { get; set; } = new();
+
     public DateTime LastUpdated { get; set; }
 }
 
@@ -29,14 +31,9 @@ public class TmdbDataManager
     private readonly IJsonSerializer _jsonSerializer;
     private readonly IHttpClient _httpClient;
     private ConcurrentDictionary<string, TmdbCacheData> _cache;
-    // private readonly object _fileLock = new object();
-    // // 1. 新增：记录最后一次请求时间
-    // private DateTime _lastRequestTime = DateTime.MinValue;
-    // // 设定最小间隔：300ms (保守值，确保不超过 40req/10s)
-    // private readonly TimeSpan _minRequestInterval = TimeSpan.FromMilliseconds(300);
-    // 改为 static，让所有实例共享这把锁
+
+    // === V1.1 Fix: 静态锁，确保所有实例共用一个限流器 ===
     private static readonly object _fileLock = new object();
-    // 改为 static，让所有实例共享节流计时器
     private static DateTime _lastRequestTime = DateTime.MinValue;
     private static readonly TimeSpan _minRequestInterval = TimeSpan.FromMilliseconds(300);
 
@@ -51,10 +48,8 @@ public class TmdbDataManager
 
     public async Task<TmdbCacheData?> GetMetadataAsync(string tmdbId, string type, string apiKey, CancellationToken cancellationToken)
     {
-        // 1. 查内存缓存
         if (_cache.TryGetValue(tmdbId, out var cachedItem)) return cachedItem;
 
-        // 2. 无缓存，去下载
         var fetchedItem = await FetchFromTmdb(tmdbId, type, apiKey, cancellationToken);
         
         if (fetchedItem != null)
@@ -65,23 +60,28 @@ public class TmdbDataManager
         return fetchedItem;
     }
 
-    // === 这里使用了你推荐的高效写法 ===
     private async Task<TmdbCacheData?> FetchFromTmdb(string tmdbId, string type, string apiKey, CancellationToken cancellationToken)
     {
-        // === 节流核心逻辑 Start ===
-        var timeSinceLast = DateTime.UtcNow - _lastRequestTime;
-        if (timeSinceLast < _minRequestInterval)
+        // === 静态节流逻辑 ===
+        TimeSpan delay = TimeSpan.Zero;
+        lock (_fileLock) // 简单的锁保护时间计算
         {
-            // 如果距离上次请求不足 300ms，则等待剩下的时间
-            var delay = _minRequestInterval - timeSinceLast;
+            var timeSinceLast = DateTime.UtcNow - _lastRequestTime;
+            if (timeSinceLast < _minRequestInterval)
+            {
+                delay = _minRequestInterval - timeSinceLast;
+            }
+            // 预支时间，占位
+            _lastRequestTime = DateTime.UtcNow + delay;
+        }
+        
+        if (delay > TimeSpan.Zero)
+        {
             await Task.Delay(delay, cancellationToken);
         }
-        // 更新最后请求时间（注意：要在 await 之后，请求发起之前更新）
-        _lastRequestTime = DateTime.UtcNow;
-        // === 节流核心逻辑 End ===
-        
+        // === 结束节流 ===
+
         var url = $"https://api.themoviedb.org/3/{type}/{tmdbId}?api_key={apiKey}";
-        
         var options = new HttpRequestOptions
         {
             Url = url,
@@ -94,27 +94,25 @@ public class TmdbDataManager
         try
         {
             using var response = await _httpClient.GetResponse(options).ConfigureAwait(false);
-            
-            // 直接反序列化为实体类，干净利落！
             var details = _jsonSerializer.DeserializeFromStream<TmdbItemDetails>(response.Content);
 
             if (details == null) return null;
 
-            // 将 API 返回的复杂对象转换为我们简单的缓存对象
             return new TmdbCacheData
             {
                 TmdbId = tmdbId,
                 LastUpdated = DateTime.Now,
                 ImdbId = details.ImdbId,
                 OriginalLanguage = details.OriginalLanguage,
-                // 处理可能为 null 的列表
                 OriginCountries = details.OriginCountry ?? new List<string>(),
-                ProductionCountries = details.ProductionCountries?.Select(c => c.IsoCode ?? "").ToList() ?? new List<string>()
+                
+                // V1.2: 提取并存储 ID
+                ProductionCompanyIds = details.ProductionCompanies?.Select(c => c.Id).ToList() ?? new List<int>(),
+                NetworkIds = details.Networks?.Select(n => n.Id).ToList() ?? new List<int>()
             };
         }
         catch (Exception)
         {
-            // 网络错误或解析失败
             return null;
         }
     }

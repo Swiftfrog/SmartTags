@@ -186,7 +186,19 @@ public class SmartTagsCleanupTask : IScheduledTask
                 {
                     tagsToRemove.Add(imdbTag);
                 }
-    
+                
+                // === E. 清理制片商/流媒体标签 (基于已知列表) ===
+                // 注意：这会检查所有 SmartTags "认识" 的厂牌名。
+                // 如果用户手动打了一个 "Netflix"，也会被删掉。这是回滚的代价。
+                var knownStudios = StudioMapper.GetAllKnownStudioTags();
+                foreach (var studio in knownStudios)
+                {
+                    if (currentTags.Contains(studio, StringComparer.OrdinalIgnoreCase))
+                    {
+                        tagsToRemove.Add(studio);
+                    }
+                }
+                   
                 // === 执行删除 ===
                 if (tagsToRemove.Count > 0)
                 {

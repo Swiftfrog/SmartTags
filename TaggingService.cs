@@ -98,7 +98,25 @@ public class TaggingService
                 }
             }
         }
-
+        
+        // === D. 制片商/流媒体标签 (V1.2) ===
+        if (config.EnableStudioTags)
+        {
+            // data 在上面已经获取到了 (GetMetadataAsync)
+            if (data != null)
+            {
+                var studioTags = StudioMapper.GetStudioTags(data);
+                foreach (var tag in studioTags)
+                {
+                    if (AddTag(item, tag))
+                    {
+                        isModified = true;
+                        addedLogTags.Add(tag);
+                    }
+                }
+            }
+        }     
+        
         if (isModified)
         {
             _logger.Info($"[SmartTags] 自动标记: \"{item.Name}\" -> [{string.Join(", ", addedLogTags)}]");

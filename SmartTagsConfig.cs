@@ -55,6 +55,11 @@ public class SmartTagsConfig : EditableOptionsBase
     [Description("自动添加 Atmos, DTS:X, TrueHD, DTS-HD 等次世代音轨标签")]
     public bool EnableAudioTags { get; set; } = false;
     
+    // === V1.2 新增 ===
+    [DisplayName("启用制片商/流媒体标签")]
+    [Description("自动添加 Netflix, HBO, Disney, Marvel, TVB, Ghibli 等标签")]
+    public bool EnableStudioTags { get; set; } = false;
+    
     [DisplayName("启用清理任务")]
     [Description("慎重！执行 '清除SmartTags生成的标签' 任务。任务完成后，自动关闭选线，避免误操作。")]
     public bool EnableCleanup { get; set; } = false;
