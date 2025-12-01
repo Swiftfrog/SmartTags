@@ -1,5 +1,6 @@
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV; // <--- 修复点：添加 TV 引用
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Logging;
@@ -18,7 +19,7 @@ public class TaggingService
 {
     private readonly ILogger _logger;
     private readonly TmdbDataManager _dataManager;
-    private readonly HashSet<string> _imdbTopIds; // 用于缓存 IMDb ID
+    private readonly HashSet<string> _imdbTopIds;
 
     public TaggingService(ILogger logger, TmdbDataManager dataManager, HashSet<string> imdbTopIds)
     {
@@ -27,9 +28,6 @@ public class TaggingService
         _imdbTopIds = imdbTopIds;
     }
 
-    /// <summary>
-    /// 处理单个项目：返回 true 表示项目被修改了
-    /// </summary>
     public async Task<bool> ProcessItemAsync(BaseItem item, SmartTagsConfig config, CancellationToken cancellationToken)
     {
         // 过滤掉文件夹、集合等非媒体项
@@ -87,8 +85,6 @@ public class TaggingService
             {
                 string type = item is Movie ? "movie" : "tv";
                 
-                // 注意：实时模式下，如果不等待节流，可能会瞬间并发请求
-                // 但由于 TmdbDataManager 内置了锁和节流，所以是安全的
                 var data = await _dataManager.GetMetadataAsync(tmdbId, type, config.TmdbApiKey, cancellationToken);
 
                 if (data != null)
@@ -103,7 +99,6 @@ public class TaggingService
             }
         }
 
-        // 如果发生了修改，记录简短日志（由调用者决定是否 UpdateToRepository）
         if (isModified)
         {
             _logger.Info($"[SmartTags] 自动标记: \"{item.Name}\" -> [{string.Join(", ", addedLogTags)}]");
@@ -112,7 +107,6 @@ public class TaggingService
         return isModified;
     }
 
-    // --- 辅助方法 (从 Task 搬过来的) ---
     private string? TryGetDecadeTag(BaseItem item, DecadeStyle style)
     {
         if (!item.ProductionYear.HasValue || item.ProductionYear.Value < 1850) return null;
