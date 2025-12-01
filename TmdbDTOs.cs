@@ -31,6 +31,16 @@ public class TmdbItemDetails
 }
 
 [DataContract]
+public class TmdbProductionCountry
+{
+    [DataMember(Name = "iso_3166_1")]
+    public string? IsoCode { get; set; }
+
+    [DataMember(Name = "name")]
+    public string? Name { get; set; }
+}
+
+[DataContract]
 public class TmdbProductionCompany
 {
     [DataMember(Name = "id")]
