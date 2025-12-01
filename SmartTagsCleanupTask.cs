@@ -148,15 +148,25 @@ public class SmartTagsCleanupTask : IScheduledTask
     
                 // === 精准清理媒体信息标签 (基于本地重新计算) ===
                 // 调用 Helper 算出这部影片“理论上”会拥有的媒体标签
-                var expectedMediaTags = MediaInfoHelper.GetMediaInfoTags(item, fullMediaConfig);
-                foreach (var tag in expectedMediaTags)
+                // var expectedMediaTags = MediaInfoHelper.GetMediaInfoTags(item, fullMediaConfig);
+                // foreach (var tag in expectedMediaTags)
+                // {
+                //     if (currentTags.Contains(tag, StringComparer.OrdinalIgnoreCase))
+                //     {
+                //         tagsToRemove.Add(tag);
+                //     }
+                // }
+                // 修正逻辑：不再重新计算“该有什么”，而是直接检查“有没有SmartTags的词”
+                // 这样即使文件没有媒体信息，也能把残留的 "4K", "HDR" 等标签删干净
+                var knownMediaTags = MediaInfoHelper.GetAllKnownMediaInfoTags();
+                foreach (var tag in knownMediaTags)
                 {
                     if (currentTags.Contains(tag, StringComparer.OrdinalIgnoreCase))
                     {
                         tagsToRemove.Add(tag);
                     }
                 }
-    
+
                 // === 清理年代标签 (基于算法) ===
                 if (item.ProductionYear.HasValue && item.ProductionYear.Value >= 1850)
                 {

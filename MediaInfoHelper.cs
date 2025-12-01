@@ -100,4 +100,19 @@ public static class MediaInfoHelper
 
         return tags;
     }
+    
+    /// 获取所有 SmartTags 可能生成的媒体信息标签 (供 Cleanup 任务使用)
+    public static IEnumerable<string> GetAllKnownMediaInfoTags()
+    {
+        return new List<string>
+        {
+            // 分辨率
+            "4K", "1080p", "720p",
+            // 画质
+            "HDR", "Dolby Vision",
+            // 音频
+            "Atmos", "DTS:X", "TrueHD", "DTS-HD MA"
+        };
+    }
+    
 }
