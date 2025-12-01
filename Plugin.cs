@@ -10,7 +10,7 @@ using System.IO;
 
 namespace SmartTags;
 
-public class Plugin : BasePluginSimpleUI<SmartTagsConfig>
+public class Plugin : BasePluginSimpleUI<SmartTagsConfig>, IHasThumbImage
 {
     public override string Name => "SmartTags";
     public override string Description => "基于 TMDB 数据自动管理原产地、年代及 IMDb Top 250 标签。";
@@ -48,5 +48,20 @@ public class Plugin : BasePluginSimpleUI<SmartTagsConfig>
     
     // === 新增：全局清理状态锁 ===
     public static bool IsCleanupRunning { get; set; } = false;
-       
+    
+    public Stream GetThumbImage()
+    {
+        var assembly = GetType().Assembly;
+        string resourceName = "SmartTags.SmartTagsLogo.webp";
+        var stream = assembly.GetManifestResourceStream(resourceName);
+        if (stream == null)
+        {
+            throw new InvalidOperationException(
+                $"Failed to load embedded logo resource: '{resourceName}'. " +
+                "Check that the file is included as <EmbeddedResource> in SmartTags.csproj.");
+        }
+        return stream;
+    }
+    public ImageFormat ThumbImageFormat => ImageFormat.Webp;  
+
 }
