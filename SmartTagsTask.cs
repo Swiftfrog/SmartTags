@@ -108,7 +108,7 @@ public class SmartTagsTask : IScheduledTask
                 }
             }
 
-            // === V1.1 新增: 媒体信息标签 (本地逻辑，速度快) ===
+            // === 媒体信息标签 (本地逻辑，速度快) ===
             // 只要开启了任意一个媒体标签开关
             if (config.EnableResolutionTags || config.EnableHdrTags || config.EnableAudioTags)
             {
@@ -131,7 +131,7 @@ public class SmartTagsTask : IScheduledTask
                 }
             }
 
-            // === B. IMDb Top 250 (仅限电影) ===
+            // === IMDb Top 250 (仅限电影) ===
             if (config.EnableImdbTopTags && item is Movie movie)
             {
                 var imdbId = movie.GetProviderId(MetadataProviders.Imdb); // 你的修正
@@ -151,7 +151,7 @@ public class SmartTagsTask : IScheduledTask
                 }
             }
 
-            // === C. TMDB 原产国标签 ===
+            // === TMDB 原产国标签 ===
             if (config.EnableCountryTags)
             {
                 var tmdbId = item.GetProviderId(MetadataProviders.Tmdb);
@@ -289,26 +289,6 @@ public class SmartTagsTask : IScheduledTask
     }
 
     // --- 辅助方法: 标签操作 ---
-    // private string? TryGetDecadeTag(BaseItem item, string format)
-    // {
-    //     if (!item.ProductionYear.HasValue || item.ProductionYear.Value < 1900) return null;
-    //     int decade = (item.ProductionYear.Value / 10) * 10;
-    //     return string.Format(format, decade);
-    // }
-
-    // private string? TryGetDecadeTag(BaseItem item, string format)
-    // {
-    //     if (!item.ProductionYear.HasValue || item.ProductionYear.Value < 1900) return null;
-    //     
-    //     int year = item.ProductionYear.Value;
-    //     int decade4 = (year / 10) * 10; // 1990
-    //     int decade2 = decade4 % 100;    // 90
-// 
-    //     // 核心修改：传入两个参数
-    //     // {0} = 1990, {1} = 90
-    //     return string.Format(format, decade4, decade2);
-    // }
-    
     private string? TryGetDecadeTag(BaseItem item, DecadeStyle style)
     {
         if (!item.ProductionYear.HasValue || item.ProductionYear.Value < 1850) return null; // 过滤掉太早的年份

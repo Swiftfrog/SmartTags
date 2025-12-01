@@ -115,24 +115,7 @@ public class SmartTagsCleanupTask : IScheduledTask
                 var currentTags = item.Tags.ToList();
                 var tagsToRemove = new List<string>(); 
                 
-                // // === A. 精准清理原产地标签 (基于缓存) ===
-                // var tmdbId = item.GetProviderId(MetadataProviders.Tmdb); // 获取 ID 的代码必须存在
-    // 
-                // if (!string.IsNullOrEmpty(tmdbId) && cache != null && cache.TryGetValue(tmdbId, out var cacheData))
-                // {
-                //     // 传入 config (或全开的 tempConfig，如果是 Cleanup 这里的 config 就是 Plugin.Config)
-                //     // 注意：如果用户改了格式（比如从“香港”改为“香港 (HK)”），
-                //     // 这里只能算出“香港 (HK)”，所以旧的“香港”不会被删除。
-                //     // 建议用户：先运行 Cleanup 清理旧格式，再改设置，再运行 Update。
-                //     var expectedTag = RegionTagHelper.GetRegionTag(cacheData, config); 
-                //     
-                //     if (!string.IsNullOrEmpty(expectedTag) && currentTags.Contains(expectedTag, StringComparer.OrdinalIgnoreCase))
-                //     {
-                //         tagsToRemove.Add(expectedTag);
-                //     }
-                // }
-    
-                // === A. 精准清理原产地标签 (遍历所有风格) ===
+                // === 精准清理原产地标签 (遍历所有风格) ===
                 var tmdbId = item.GetProviderId(MetadataProviders.Tmdb);
     
                 if (!string.IsNullOrEmpty(tmdbId) && cache != null && cache.TryGetValue(tmdbId, out var cacheData))
@@ -160,7 +143,7 @@ public class SmartTagsCleanupTask : IScheduledTask
                     }
                 }
     
-                // === B. 精准清理媒体信息标签 (基于本地重新计算) ===
+                // === 精准清理媒体信息标签 (基于本地重新计算) ===
                 // 调用 Helper 算出这部影片“理论上”会拥有的媒体标签
                 var expectedMediaTags = MediaInfoHelper.GetMediaInfoTags(item, fullMediaConfig);
                 foreach (var tag in expectedMediaTags)
@@ -171,20 +154,7 @@ public class SmartTagsCleanupTask : IScheduledTask
                     }
                 }
     
-                // === C. 清理年代标签 (基于算法) ===
-                // if (item.ProductionYear.HasValue && item.ProductionYear.Value >= 1900)
-                // {
-                //     string format = config?.DecadeTagFormat ?? "{0}年代";
-                //     int decade = (item.ProductionYear.Value / 10) * 10;
-                //     string expectedDecadeTag = string.Format(format, decade);
-    // 
-                //     if (currentTags.Contains(expectedDecadeTag, StringComparer.OrdinalIgnoreCase))
-                //     {
-                //         tagsToRemove.Add(expectedDecadeTag);
-                //     }
-                // }
-                
-                // === B. 清理年代标签 (基于算法) ===
+                // === 清理年代标签 (基于算法) ===
                 if (item.ProductionYear.HasValue && item.ProductionYear.Value >= 1850)
                 {
                     int year = item.ProductionYear.Value;
@@ -240,7 +210,7 @@ public class SmartTagsCleanupTask : IScheduledTask
                 }
             }
     
-            _logger.Info($"[SmartTags] Cleanup 完成。处理 {total} 个项目，实际回滚 {cleanedCount} 个。");
+            _logger.Info($"[SmartTags] Cleanup 完成。处理 {total} 个项目，实际处理 {cleanedCount} 个。");
         }
         catch (Exception ex)
         {
@@ -249,7 +219,7 @@ public class SmartTagsCleanupTask : IScheduledTask
         }
         finally
         {
-            // === 核心修改：任务结束（无论成功失败），自动关闭开关 ===
+            // === 任务结束（无论成功失败），自动关闭开关 ===
             _logger.Info("[SmartTags] Cleanup 任务结束，正在自动关闭危险操作开关...");
             Plugin.Instance?.OnCleanupFinished();
         }   

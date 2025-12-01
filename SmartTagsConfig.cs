@@ -8,6 +8,11 @@ public class SmartTagsConfig : EditableOptionsBase
 {
     public override string EditorTitle => "SmartTags Settings";
     
+    // 实时监控
+    [DisplayName("启用实时监听")]
+    [Description("当新媒体入库或元数据刷新时，自动进行标签处理。")]
+    public bool EnableRealtimeMonitor { get; set; } = false;
+    
     // TMDB API Key (必须)
     [DisplayName("TMDB API Key")]
     [Description("申请地址：https://www.themoviedb.org/settings/api")]
@@ -51,7 +56,7 @@ public class SmartTagsConfig : EditableOptionsBase
     public bool EnableAudioTags { get; set; } = false;
     
     [DisplayName("启用清理任务")]
-    [Description("慎重！执行 '清除SmartTags生成的标签' 任务。此开关在 Emby 重启后会自动关闭。")]
+    [Description("慎重！执行 '清除SmartTags生成的标签' 任务。任务完成后，自动关闭选线，避免误操作。")]
     public bool EnableCleanup { get; set; } = false;
 }
 
