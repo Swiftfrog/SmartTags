@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <AssemblyName>SmartTags</AssemblyName>
     <RootNamespace>SmartTags</RootNamespace>
-    <Version>v24.12.02</Version>
+    <Version>24.12.02</Version>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <Nullable>enable</Nullable>
   </PropertyGroup>
