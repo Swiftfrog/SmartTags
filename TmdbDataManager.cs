@@ -106,9 +106,17 @@ public class TmdbDataManager
                 OriginalLanguage = details.OriginalLanguage,
                 OriginCountries = details.OriginCountry ?? new List<string>(),
                 
-                // V1.2: 提取并存储 ID
+                // 1. 提取制作国家代码 (注意属性名变化)
+                // details.ProductionCountryList -> TmdbCountry -> IsoCode
+                ProductionCountries = details.ProductionCountryList?.Select(c => c.IsoCode ?? "").ToList() ?? new List<string>(),
+                
+                // 2. 提取制作公司 ID
                 ProductionCompanyIds = details.ProductionCompanies?.Select(c => c.Id).ToList() ?? new List<int>(),
+                
+                // 3. 提取电视网 ID
                 NetworkIds = details.Networks?.Select(n => n.Id).ToList() ?? new List<int>()
+                
+                
             };
         }
         catch (Exception)
