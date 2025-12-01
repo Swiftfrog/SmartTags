@@ -17,12 +17,7 @@ public class TmdbCacheData
     public string? ImdbId { get; set; }
     public string? OriginalLanguage { get; set; }
     public List<string> OriginCountries { get; set; } = new();
-    
-    // === [修复] 添加缺失的属性 ===
-    // 用于存储 production_countries (如 "US", "GB")，RegionTagHelper 的兜底逻辑依赖它
     public List<string> ProductionCountries { get; set; } = new();
-    
-    // V1.2 变更：分开存储 ID，避免冲突
     public List<int> ProductionCompanyIds { get; set; } = new(); 
     public List<int> NetworkIds { get; set; } = new();
 
@@ -35,8 +30,6 @@ public class TmdbDataManager
     private readonly IJsonSerializer _jsonSerializer;
     private readonly IHttpClient _httpClient;
     private ConcurrentDictionary<string, TmdbCacheData> _cache;
-
-    // === V1.1 Fix: 静态锁，确保所有实例共用一个限流器 ===
     private static readonly object _fileLock = new object();
     private static DateTime _lastRequestTime = DateTime.MinValue;
     private static readonly TimeSpan _minRequestInterval = TimeSpan.FromMilliseconds(300);

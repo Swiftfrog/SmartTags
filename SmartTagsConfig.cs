@@ -10,7 +10,7 @@ public class SmartTagsConfig : EditableOptionsBase
     
     // 实时监控
     [DisplayName("启用实时监听")]
-    [Description("当新媒体入库或元数据刷新时，自动进行标签处理。")]
+    [Description("当新媒体入库或元数据刷新时，自动进行标签处理。也可以用计划任务。")]
     public bool EnableRealtimeMonitor { get; set; } = false;
     
     // TMDB API Key (必须)
@@ -20,21 +20,21 @@ public class SmartTagsConfig : EditableOptionsBase
 
     // 功能开关
     [DisplayName("启用原产国标签")]
-    [Description("是否启用添加原产国标签")]
+    [Description("自动添加原产国标签")]
     public bool EnableCountryTags { get; set; } = false;
     
-    // === 新增：国家标签风格设置 ===
+    // === 国家标签风格设置 ===
     [DisplayName("原产国标签格式")]
     [Description("选择生成的标签样式")]
     public CountryTagStyle CountryStyle { get; set; } = CountryTagStyle.NameOnly;
     
     [DisplayName("启用IMDB TOP 250 标签")]
-    [Description("是否启用添加IMDB TOP 250标签")]
+    [Description("自动添加IMDB TOP 250标签")]
     public bool EnableImdbTopTags { get; set; } = false;
 
     // 格式化设置
     [DisplayName("启用年代标签")]
-    [Description("是否启用添加年代标签")]
+    [Description("自动添加年代标签")]
     public bool EnableDecadeTags { get; set; } = false;
     
     // === 修改：改为枚举选择 ===
@@ -42,7 +42,7 @@ public class SmartTagsConfig : EditableOptionsBase
     [Description("选择年代标签的显示格式。注意：2位数字风格无法区分 1950 和 2050。")]
     public DecadeStyle DecadeStyle { get; set; } = DecadeStyle.FourDigits;
     
-    // === V1.1 新增：媒体信息标签 ===
+    // === 媒体信息标签 ===
     [DisplayName("启用分辨率标签")]
     [Description("自动添加 4K, 1080p, 720p 等标签")]
     public bool EnableResolutionTags { get; set; } = false;
@@ -55,13 +55,12 @@ public class SmartTagsConfig : EditableOptionsBase
     [Description("自动添加 Atmos, DTS:X, TrueHD, DTS-HD 等次世代音轨标签")]
     public bool EnableAudioTags { get; set; } = false;
     
-    // === V1.2 新增 ===
     [DisplayName("启用制片商/流媒体标签")]
     [Description("自动添加 Netflix, HBO, Disney, Marvel, TVB, Ghibli 等标签")]
     public bool EnableStudioTags { get; set; } = false;
     
     [DisplayName("启用清理任务")]
-    [Description("慎重！执行 '清除SmartTags生成的标签' 任务。任务完成后，自动关闭选线，避免误操作。")]
+    [Description("慎重！执行 '清除SmartTags生成的标签' 任务。任务完成后，自动关闭选项，避免误操作。")]
     public bool EnableCleanup { get; set; } = false;
 }
 

@@ -129,7 +129,7 @@ public static class RegionTagHelper
                     {
                         code = data.OriginCountries.FirstOrDefault(c => c.Equals("HK", StringComparison.OrdinalIgnoreCase));
                     }
-                    // 国语 (zh) -> 锚定 TW 或 CN (修正《双瞳》问题)
+                    // 国语 (zh) -> 锚定 TW 或 CN
                     else if (lang == "zh")
                     {
                         code = data.OriginCountries.FirstOrDefault(c => 
@@ -139,7 +139,6 @@ public static class RegionTagHelper
                 }
                 
                 // B2: 非华语片 (或 B1 锚定失败) - 资金方仲裁策略
-                // 解决《谜一样的双眼》西班牙/阿根廷排序问题
                 if (string.IsNullOrEmpty(code))
                 {
                     var primaryProducer = data.ProductionCountries?.FirstOrDefault();
