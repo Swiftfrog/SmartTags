@@ -18,6 +18,10 @@ public class TmdbCacheData
     public string? OriginalLanguage { get; set; }
     public List<string> OriginCountries { get; set; } = new();
     
+    // === [修复] 添加缺失的属性 ===
+    // 用于存储 production_countries (如 "US", "GB")，RegionTagHelper 的兜底逻辑依赖它
+    public List<string> ProductionCountries { get; set; } = new();
+    
     // V1.2 变更：分开存储 ID，避免冲突
     public List<int> ProductionCompanyIds { get; set; } = new(); 
     public List<int> NetworkIds { get; set; } = new();
