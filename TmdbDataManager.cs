@@ -29,11 +29,16 @@ public class TmdbDataManager
     private readonly IJsonSerializer _jsonSerializer;
     private readonly IHttpClient _httpClient;
     private ConcurrentDictionary<string, TmdbCacheData> _cache;
-    private readonly object _fileLock = new object();
-    // 1. 新增：记录最后一次请求时间
-    private DateTime _lastRequestTime = DateTime.MinValue;
-    // 设定最小间隔：300ms (保守值，确保不超过 40req/10s)
-    private readonly TimeSpan _minRequestInterval = TimeSpan.FromMilliseconds(300);
+    // private readonly object _fileLock = new object();
+    // // 1. 新增：记录最后一次请求时间
+    // private DateTime _lastRequestTime = DateTime.MinValue;
+    // // 设定最小间隔：300ms (保守值，确保不超过 40req/10s)
+    // private readonly TimeSpan _minRequestInterval = TimeSpan.FromMilliseconds(300);
+    // 改为 static，让所有实例共享这把锁
+    private static readonly object _fileLock = new object();
+    // 改为 static，让所有实例共享节流计时器
+    private static DateTime _lastRequestTime = DateTime.MinValue;
+    private static readonly TimeSpan _minRequestInterval = TimeSpan.FromMilliseconds(300);
 
     public TmdbDataManager(IApplicationPaths appPaths, IJsonSerializer jsonSerializer, IHttpClient httpClient)
     {
