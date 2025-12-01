@@ -33,4 +33,17 @@ public class Plugin : BasePluginSimpleUI<SmartTagsConfig>
             SaveOptions(config);
         }
     }
+    
+    // === 新增：供 CleanupTask 调用的公开方法 ===
+    public void OnCleanupFinished()
+    {
+        var config = Configuration;
+        if (config.EnableCleanup)
+        {
+            config.EnableCleanup = false;
+            // 调用基类的受保护方法保存
+            SaveOptions(config); 
+        }
+    }
+       
 }
