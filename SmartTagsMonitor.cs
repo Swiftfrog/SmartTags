@@ -39,7 +39,8 @@ public class SmartTagsMonitor : IServerEntryPoint
         _httpClient = httpClient;
     }
 
-    public Task RunAsync()
+    // === 修正点：必须是同步的 void Run() ===
+    public void Run()
     {
         // 1. 初始化 DataManager
         _dataManager = new TmdbDataManager(_appPaths, _jsonSerializer, _httpClient);
@@ -52,14 +53,12 @@ public class SmartTagsMonitor : IServerEntryPoint
         // 3. 订阅事件
         _libraryManager.ItemUpdated += OnItemUpdated;
         _libraryManager.ItemAdded += OnItemAdded;
-
-        return Task.CompletedTask;
     }
 
     private void LoadImdbIdsFromLocal()
     {
-        // 这里简写：复用 Task 里的加载逻辑，或者你可以把 Task 里的 GetImdbTop250IdsAsync 提取到 Service 里
-        // 为演示方便，这里假设已初始化为空，等计划任务跑一次后就有数据了
+        // 这里的逻辑可以简单处理，或者留空等待计划任务填充文件
+        // 为防止启动变慢，这里暂不执行繁重的 IO 操作
     }
 
     public void Dispose()
@@ -68,7 +67,7 @@ public class SmartTagsMonitor : IServerEntryPoint
         _libraryManager.ItemAdded -= OnItemAdded;
     }
 
-    private async void OnItemAdded(object? sender, ItemChangeEventArgs e)
+    private void OnItemAdded(object? sender, ItemChangeEventArgs e)
     {
         // 新增项目时，元数据可能还没刮削完，所以这里我们只做简单记录
         // 真正的处理交给 OnItemUpdated
@@ -81,7 +80,6 @@ public class SmartTagsMonitor : IServerEntryPoint
 
         // 过滤：只处理 Movie 和 Series
         // 过滤：ItemUpdateType.MetadataImport (刮削完成) 或 MetadataEdit (手动编辑)
-        // 这样可以减少触发频率
         var item = e.Item;
         if (item is not MediaBrowser.Controller.Entities.Movies.Movie && item is not MediaBrowser.Controller.Entities.TV.Series)
             return;
@@ -110,7 +108,7 @@ public class SmartTagsMonitor : IServerEntryPoint
         }
         catch (Exception ex)
         {
-            _logger.Error($"[SmartTags-Monitor] 处理 {item.Name} 时出错: {ex.Message}");
+            _logger.Error($"[SmartTags] 处理 {item.Name} 时出错: {ex.Message}");
         }
     }
 }
