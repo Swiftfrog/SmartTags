@@ -105,7 +105,7 @@ public static class RegionTagHelper
         if (data == null) return null;
 
         string lang = data.OriginalLanguage?.ToLower() ?? "";
-        string code = null;
+        string? code = null;
 
         // === 逻辑层级 1: 优先分析 OriginCountries ===
         if (data.OriginCountries != null && data.OriginCountries.Count > 0)
