@@ -45,5 +45,8 @@ public class Plugin : BasePluginSimpleUI<SmartTagsConfig>
             SaveOptions(config); 
         }
     }
+    
+    // === 新增：全局清理状态锁 ===
+    public static bool IsCleanupRunning { get; set; } = false;
        
 }

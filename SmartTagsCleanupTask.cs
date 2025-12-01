@@ -58,8 +58,11 @@ public class SmartTagsCleanupTask : IScheduledTask
 
         try
         {
+            // === 上锁 ===
+            Plugin.IsCleanupRunning = true;
+            _logger.Info("[SmartTags】Cleanup 已激活全局清理锁，实时监听将暂停。");
 
-            _logger.Info("[SmartTags] Cleanup 开始执行回滚任务...");
+            _logger.Info("[SmartTags] Cleanup 开始执行删除任务...");
     
             // 1. 读取 TMDB 缓存文件 (用于精准回滚原产地标签)
             var cachePath = Path.Combine(_appPaths.PluginConfigurationsPath, "SmartTags_TmdbCache.json");
@@ -231,6 +234,15 @@ public class SmartTagsCleanupTask : IScheduledTask
         }
         finally
         {
+            // === 采纳你的建议：添加冷却延迟 ===
+            // 防止 Emby 的事件队列有滞后，导致任务刚结束锁就开了，最后几个事件又把标签加回来了。
+            _logger.Info("[SmartTags] Cleanup 正在等待事件队列冷却 (5秒)...");
+            await Task.Delay(5000); // 延迟 5 秒释放锁
+
+            // === 解锁 ===
+            Plugin.IsCleanupRunning = false;
+            _logger.Info("[SmartTags] Cleanup] 全局清理锁已释放。");
+            
             // === 任务结束（无论成功失败），自动关闭开关 ===
             _logger.Info("[SmartTags] Cleanup 任务结束，正在自动关闭危险操作开关...");
             Plugin.Instance?.OnCleanupFinished();

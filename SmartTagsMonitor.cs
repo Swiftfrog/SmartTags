@@ -70,6 +70,14 @@ public class SmartTagsMonitor : IServerEntryPoint
 
     private async void OnItemUpdated(object? sender, ItemChangeEventArgs e)
     {
+        // === 核心检查：如果正在清理，直接忽略所有事件 ===
+        if (Plugin.IsCleanupRunning) 
+        {
+            // 可选：打个 Debug 日志看是否生效 (太频繁可不打)
+            // _logger.Debug("[SmartTags-Monitor] 清理任务正在运行，跳过实时处理。");
+            return; 
+        }     
+                
         var config = Plugin.Instance?.Configuration;
         if (config == null || !config.EnableRealtimeMonitor) return;
 
