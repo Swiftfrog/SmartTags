@@ -77,45 +77,45 @@ public class TaggingService
             }
         }
 
-        // === C. TMDB 原产国标签 ===
-        if (config.EnableCountryTags)
+        // === 准备工作：获取 TMDB 数据 (供 C 和 D 共用) ===
+        // 只有当“原产国”或“制片商”任一功能开启时，才需要去获取数据
+        TmdbCacheData? tmdbData = null;
+        
+        if (config.EnableCountryTags || config.EnableStudioTags)
         {
             var tmdbId = item.GetProviderId(MetadataProviders.Tmdb);
             if (!string.IsNullOrEmpty(tmdbId))
             {
                 string type = item is Movie ? "movie" : "tv";
-                
-                var data = await _dataManager.GetMetadataAsync(tmdbId, type, config.TmdbApiKey, cancellationToken);
-
-                if (data != null)
-                {
-                    var regionTag = RegionTagHelper.GetRegionTag(data, config);
-                    if (!string.IsNullOrEmpty(regionTag) && AddTag(item, regionTag))
-                    {
-                        isModified = true;
-                        addedLogTags.Add(regionTag);
-                    }
-                }
+                // 获取数据 (带缓存和节流)
+                tmdbData = await _dataManager.GetMetadataAsync(tmdbId, type, config.TmdbApiKey, cancellationToken);
             }
         }
-        
-        // === D. 制片商/流媒体标签 (V1.2) ===
-        if (config.EnableStudioTags)
+
+        // === C. TMDB 原产国标签 ===
+        if (config.EnableCountryTags && tmdbData != null)
         {
-            // data 在上面已经获取到了 (GetMetadataAsync)
-            if (data != null)
+            var regionTag = RegionTagHelper.GetRegionTag(tmdbData, config);
+            if (!string.IsNullOrEmpty(regionTag) && AddTag(item, regionTag))
             {
-                var studioTags = StudioMapper.GetStudioTags(data);
-                foreach (var tag in studioTags)
+                isModified = true;
+                addedLogTags.Add(regionTag);
+            }
+        }
+
+        // === D. 制片商/流媒体标签 (V1.2) ===
+        if (config.EnableStudioTags && tmdbData != null)
+        {
+            var studioTags = StudioMapper.GetStudioTags(tmdbData);
+            foreach (var tag in studioTags)
+            {
+                if (AddTag(item, tag))
                 {
-                    if (AddTag(item, tag))
-                    {
-                        isModified = true;
-                        addedLogTags.Add(tag);
-                    }
+                    isModified = true;
+                    addedLogTags.Add(tag);
                 }
             }
-        }     
+        }    
         
         if (isModified)
         {
