@@ -2,7 +2,7 @@ name: Build SmartTags Plugin
 
 on:
   push:
-    branches: [ "main", "master", "d*" ] # 监听 main, master 以及 d 开头的开发分支
+    branches: [ "d*" ] # 监听 main, master 以及 d 开头的开发分支
     tags: [ "v*" ]                       # 监听 v 开头的 tag (如 v1.0.0)
   pull_request:
     branches: [ "main" ]
